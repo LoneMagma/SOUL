@@ -1,0 +1,43 @@
+# Environment variables (API keys!)
+.env
+*.env
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Logs
+logs/
+*.log
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal notes
+apis.txt
+notes.txt
+
+# Testing
+test_*.py
+*.test
+
+# Distribution
+dist/
+build/
+*.egg-info/
