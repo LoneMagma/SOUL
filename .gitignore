@@ -41,3 +41,42 @@ test_*.py
 dist/
 build/
 *.egg-info/
+
+# Environment variables (API keys)
+.env
+*.env
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Logs
+logs/
+*.log
+
+# Audio temp files
+*.wav
+temp_*.mp3
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal notes
+notes.txt
+todo.txt

@@ -1,3 +1,15 @@
+# Core dependencies
 requests==2.31.0
 python-dotenv==1.0.0
 
+# Voice output
+edge-tts==6.1.9
+pygame==2.5.2
+pyttsx3==2.90
+
+# Voice input 
+SpeechRecognition==3.10.1
+pyaudio==0.2.14
+
+# Wake word (FREE TIER - 3 wake words)
+pvporcupine==3.0.2
