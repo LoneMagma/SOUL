@@ -72,7 +72,7 @@ soul-pacificia-mvp/
 ## Roadmap
 
 - [x] Phase 1: Text-based conversation engine
-- [ ] Phase 2: Voice interaction (wake word, STT, TTS)
+- [x] Phase 2: Voice interaction (wake word, STT, TTS)
 - [ ] Phase 3: Action execution system
 - [ ] Phase 4: System state monitoring
 - [ ] Phase 5: Visual desktop overlay
