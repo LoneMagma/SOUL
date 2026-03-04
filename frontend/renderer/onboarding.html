@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SOUL — Setup</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg: #07090e;
+  --surface: rgba(255,255,255,0.036);
+  --border: rgba(255,255,255,0.07);
+  --accent: #8b7cf8;
+  --accent-soft: rgba(139,124,248,0.1);
+  --text: #ddd8f3;
+  --text-dim: rgba(221,216,243,0.38);
+  --green: #4de89c;
+  --glow: rgba(139,124,248,0.26);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  width: 400px; height: 640px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── SIGNAL MARK ── */
+.signal-wrap {
+  position: relative;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.s-arc { position:absolute; border-radius:50%; border:1px solid transparent; }
+.s-a1 { width:56px; height:56px; border-top-color:rgba(139,124,248,.65); border-right-color:rgba(139,124,248,.1); border-left-color:rgba(139,124,248,.1); animation:spin 8s linear infinite; }
+.s-a2 { width:38px; height:38px; border-right-color:rgba(139,124,248,.45); border-bottom-color:rgba(139,124,248,.07); animation:spin 5s linear infinite reverse; }
+.s-a3 { width:22px; height:22px; border-top-color:rgba(139,124,248,.28); border-bottom-color:rgba(139,124,248,.28); animation:spin 3s linear infinite; }
+.s-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--glow); animation:dp 3s ease-in-out infinite; position:relative; z-index:2; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes dp { 0%,100%{transform:scale(1)} 50%{transform:scale(1.7);box-shadow:0 0 18px var(--glow)} }
+
+/* ── SCREEN 1 — CHAT INTRO ── */
+#s1 { padding: 0; }
+
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.chat-area::-webkit-scrollbar { width: 0; }
+
+.msg-soul {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: msg-in .3s ease;
+}
+.msg-soul .avatar { flex-shrink: 0; margin-top: 2px; }
+.msg-soul .bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 14px 3px;
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 280px;
+}
+
+.msg-user {
+  display: flex;
+  justify-content: flex-end;
+  animation: msg-in .3s ease;
+}
+.msg-user .bubble {
+  background: var(--accent-soft);
+  border: 1px solid rgba(139,124,248,.2);
+  border-radius: 14px 14px 3px 14px;
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 280px;
+}
+
+@keyframes msg-in {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:none; }
+}
+
+/* Typing indicator */
+.typing {
+  display: flex; gap: 12px; align-items: center;
+  animation: msg-in .3s ease;
+}
+.typing-dots { display:flex; gap:4px; padding:13px 14px; background:var(--surface); border:1px solid var(--border); border-radius:14px 14px 14px 3px; }
+.td { width:4px; height:4px; border-radius:50%; background:var(--accent); opacity:.4; animation:tdb 1s ease-in-out infinite; }
+.td:nth-child(2){animation-delay:.16s} .td:nth-child(3){animation-delay:.32s}
+@keyframes tdb { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-4px);opacity:1} }
+
+/* Input row */
+.input-row {
+  padding: 14px 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chat-inp {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 13px;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.chat-inp:focus { border-color: rgba(139,124,248,.42); }
+.chat-inp::placeholder { color: var(--text-dim); }
+.chat-inp:disabled { opacity: .4; }
+
+.btn-send {
+  width: 34px; height: 34px;
+  border-radius: 9px; border: none;
+  background: var(--accent);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s, transform .1s;
+  flex-shrink: 0;
+}
+.btn-send:hover { opacity: .82; }
+.btn-send:active { transform: scale(.93); }
+.btn-send:disabled { opacity: .3; cursor: default; }
+
+/* Quick options */
+.options {
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 0 20px 14px;
+  flex-shrink: 0;
+  animation: msg-in .3s ease;
+}
+.opt {
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .15s;
+}
+.opt:hover { border-color: rgba(139,124,248,.4); color: var(--text); background: var(--accent-soft); }
+
+/* ── SCREEN 2 — PERSONALITY ── */
+#s2 {
+  padding: 36px 28px 28px;
+  gap: 0;
+}
+
+.s2-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  flex-shrink: 0;
+}
+.s2-title { font-size: 16px; font-weight: 700; }
+.s2-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+.q-block {
+  margin-bottom: 22px;
+  flex-shrink: 0;
+}
+.q-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.seg {
+  display: flex; gap: 7px;
+}
+.seg-btn {
+  flex: 1;
+  padding: 10px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+  line-height: 1.3;
+}
+.seg-btn:hover { border-color: rgba(139,124,248,.3); color: var(--text); }
+.seg-btn.on { background: var(--accent-soft); border-color: rgba(139,124,248,.5); color: var(--text); }
+.seg-btn .desc { font-size: 9px; font-weight: 400; opacity: .6; display: block; margin-top: 2px; }
+
+.progress {
+  display: flex; gap: 6px; align-items: center;
+  margin-bottom: 24px; flex-shrink: 0;
+}
+.prog-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border);
+  transition: background .2s;
+}
+.prog-dot.done { background: var(--accent); }
+
+.btn-finish {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  border: none; border-radius: 11px;
+  color: white;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: .06em;
+  cursor: pointer;
+  margin-top: auto;
+  transition: opacity .15s, transform .1s;
+  flex-shrink: 0;
+}
+.btn-finish:hover { opacity: .85; }
+.btn-finish:active { transform: scale(.98); }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1 — conversational intro -->
+<div class="screen active" id="s1">
+  <div class="chat-area" id="chat"></div>
+  <div id="opts-container"></div>
+  <div class="input-row">
+    <input class="chat-inp" id="inp" type="text" placeholder="type here…" autocomplete="off" disabled />
+    <button class="btn-send" id="send-btn" onclick="sendMsg()" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- SCREEN 2 — personality -->
+<div class="screen" id="s2">
+  <div class="s2-header">
+    <div class="signal-wrap">
+      <div class="s-arc s-a1"></div><div class="s-arc s-a2"></div>
+      <div class="s-arc s-a3"></div><div class="s-dot"></div>
+    </div>
+    <div>
+      <div class="s2-title">One more thing.</div>
+      <div class="s2-sub">How should I operate?</div>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div class="prog-dot done"></div>
+    <div class="prog-dot done"></div>
+    <div class="prog-dot" id="p3"></div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">When I have an opinion</div>
+    <div class="seg" id="seg-direct">
+      <button class="seg-btn on" data-val="direct" onclick="pick('seg-direct',this)">
+        Just say it<span class="desc">unfiltered</span>
+      </button>
+      <button class="seg-btn" data-val="balanced" onclick="pick('seg-direct',this)">
+        Pick moments<span class="desc">balanced</span>
+      </button>
+      <button class="seg-btn" data-val="gentle" onclick="pick('seg-direct',this)">
+        Tread lightly<span class="desc">careful</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">When I notice something</div>
+    <div class="seg" id="seg-proact">
+      <button class="seg-btn on" data-val="speaks_up" onclick="pick('seg-proact',this)">
+        Tell me anyway<span class="desc">proactive</span>
+      </button>
+      <button class="seg-btn" data-val="when_asked" onclick="pick('seg-proact',this)">
+        Wait til asked<span class="desc">reactive</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-label">Primary focus</div>
+    <div class="seg" id="seg-focus">
+      <button class="seg-btn on" data-val="mixed" onclick="pick('seg-focus',this)">
+        Everything<span class="desc">adaptive</span>
+      </button>
+      <button class="seg-btn" data-val="code" onclick="pick('seg-focus',this)">
+        Technical<span class="desc">dev / code</span>
+      </button>
+      <button class="seg-btn" data-val="creative" onclick="pick('seg-focus',this)">
+        Creative<span class="desc">writing / design</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="btn-finish" onclick="finish()">Start</button>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────
+const state = {
+  step: 0,
+  name: '',
+  user_name: '',
+  pronouns: 'she/her',
+  device_name: '',
+  waiting_for: null,  // 'name' | 'user_name' | 'pronouns'
+};
+
+// Detect device name — filter machine IDs
+function detectDeviceName() {
+  // Electron exposes os via preload if available
+  // Fall back to user agent hints
+  try {
+    const hostname = window.location.hostname;
+    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost') {
+      return hostname;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function isHumanName(name) {
+  if (!name) return false;
+  // Reject: all digits, has lots of dashes+numbers, too generic
+  const lower = name.toLowerCase();
+  const generic = ['desktop', 'laptop', 'computer', 'pc', 'home', 'user', 'admin', 'windows'];
+  if (generic.some(g => lower === g)) return false;
+  // Reject DESKTOP-XXXXXXX pattern
+  if (/^(desktop|laptop|computer)[-_]\w{4,}$/i.test(name)) return false;
+  // Reject mostly numbers
+  if ((name.match(/\d/g) || []).length > 3) return false;
+  return name.length >= 2 && name.length <= 20;
+}
+
+// ── Chat UI ────────────────────────────────────
+function soulMsg(text, delay = 0) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const chat = document.getElementById('chat');
+      // Remove typing indicator
+      document.getElementById('typing')?.remove();
+      const el = document.createElement('div');
+      el.className = 'msg-soul';
+      el.innerHTML = `
+        <div class="avatar">
+          <div class="signal-wrap" style="width:28px;height:28px">
+            <div class="s-arc s-a1" style="width:28px;height:28px"></div>
+            <div class="s-arc s-a2" style="width:19px;height:19px"></div>
+            <div class="s-arc s-a3" style="width:11px;height:11px"></div>
+            <div class="s-dot" style="width:3px;height:3px"></div>
+          </div>
+        </div>
+        <div class="bubble">${text}</div>`;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+      resolve();
+    }, delay);
+  });
+}
+
+function userMsg(text) {
+  const chat = document.getElementById('chat');
+  const el = document.createElement('div');
+  el.className = 'msg-user';
+  el.innerHTML = `<div class="bubble">${text}</div>`;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping(delay = 0) {
+  setTimeout(() => {
+    document.getElementById('typing')?.remove();
+    const chat = document.getElementById('chat');
+    const el = document.createElement('div');
+    el.className = 'typing'; el.id = 'typing';
+    el.innerHTML = `
+      <div class="signal-wrap" style="width:28px;height:28px">
+        <div class="s-arc s-a1" style="width:28px;height:28px"></div>
+        <div class="s-arc s-a2" style="width:19px;height:19px"></div>
+        <div class="s-dot" style="width:3px;height:3px"></div>
+      </div>
+      <div class="typing-dots">
+        <div class="td"></div><div class="td"></div><div class="td"></div>
+      </div>`;
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+  }, delay);
+}
+
+function showOptions(opts) {
+  const container = document.getElementById('opts-container');
+  container.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'options';
+  opts.forEach(({label, val}) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = label;
+    btn.onclick = () => { container.innerHTML = ''; handleOption(val || label); };
+    div.appendChild(btn);
+  });
+  container.appendChild(div);
+}
+
+function enableInput(placeholder = 'type here…') {
+  const inp = document.getElementById('inp');
+  const btn = document.getElementById('send-btn');
+  inp.disabled = false;
+  btn.disabled = false;
+  inp.placeholder = placeholder;
+  inp.focus();
+}
+
+function disableInput() {
+  const inp = document.getElementById('inp');
+  const btn = document.getElementById('send-btn');
+  inp.disabled = true;
+  btn.disabled = true;
+  inp.value = '';
+}
+
+// ── Flow ───────────────────────────────────────
+async function runIntro() {
+  // Try to get device name from backend
+  try {
+    const r = await fetch('http://127.0.0.1:8765/status');
+    const data = await r.json();
+    const cn = data.computer_name || '';
+    if (cn && isHumanName(cn)) {
+      state.device_name = cn;
+    }
+  } catch(e) {}
+
+  showTyping();
+  await soulMsg("Hey. I'm SOUL — I'll be living on this machine.", 1200);
+
+  showTyping(300);
+  await soulMsg("What should I call you?", 1400);
+
+  state.waiting_for = 'user_name';
+  enableInput('your name…');
+}
+
+async function handleOption(val) {
+  userMsg(val);
+  disableInput();
+  await handleResponse(val);
+}
+
+function sendMsg() {
+  const inp = document.getElementById('inp');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  disableInput();
+  userMsg(text);
+  handleResponse(text);
+}
+
+async function handleResponse(text) {
+  if (state.waiting_for === 'user_name') {
+    state.user_name = text;
+    showTyping(300);
+
+    // Try to detect device name
+    let deviceSuggestion = null;
+    try {
+      // Ask backend for hostname
+      const r = await fetch('http://127.0.0.1:8765/status');
+      // Can't get hostname from status, skip
+    } catch(e) {}
+
+    // Check if user's name could also be the device name (e.g. "Thinkiee")
+    const lower = text.toLowerCase();
+    if (isHumanName(text)) {
+      // Ask if they want to name SOUL too
+      await soulMsg(`${text}. Got it.`, 900);
+      showTyping(300);
+      await soulMsg(`What do you want to call me? Or keep "SOUL".`, 1500);
+      state.waiting_for = 'name';
+      showOptions([
+        {label: 'Keep SOUL'},
+        {label: 'Something else', val: '__custom_name__'}
+      ]);
+      enableInput('give me a name…');
+    } else {
+      await soulMsg(`Alright.`, 900);
+      showTyping(300);
+      await soulMsg(`What should I go by? Or just keep "SOUL".`, 1500);
+      state.waiting_for = 'name';
+      showOptions([{label: 'Keep SOUL'}]);
+      enableInput('name me…');
+    }
+
+  } else if (state.waiting_for === 'name') {
+    if (text === 'Keep SOUL' || text === '__custom_name__') {
+      if (text === 'Keep SOUL') {
+        state.name = 'SOUL';
+        userMsg('Keep SOUL'); // already shown in some paths
+      }
+    } else {
+      state.name = text.charAt(0).toUpperCase() + text.slice(1);
+    }
+    if (!state.name) state.name = 'SOUL';
+
+    showTyping(400);
+    await soulMsg(`${state.name} it is.`, 900);
+    showTyping(300);
+    await soulMsg(`What pronouns?`, 1400);
+    state.waiting_for = 'pronouns';
+    showOptions([
+      {label: 'she/her'},
+      {label: 'he/him'},
+      {label: 'they/them'},
+    ]);
+
+  } else if (state.waiting_for === 'pronouns') {
+    state.pronouns = text;
+    showTyping(400);
+    await soulMsg(`Got it. One more screen — how I should operate.`, 1100);
+    setTimeout(() => goToScreen2(), 1200);
+  }
+}
+
+function goToScreen2() {
+  document.getElementById('s1').classList.remove('active');
+  document.getElementById('s2').classList.add('active');
+  document.getElementById('p3').classList.add('done');
+}
+
+// ── Screen 2 ───────────────────────────────────
+function pick(segId, btn) {
+  document.querySelectorAll('#' + segId + ' .seg-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function getVal(segId) {
+  return document.querySelector('#' + segId + ' .seg-btn.on')?.dataset.val || '';
+}
+
+async function finish() {
+  const config = {
+    name: state.name || 'SOUL',
+    pronouns: state.pronouns || 'she/her',
+    user_name: state.user_name,
+    device_name: state.device_name,
+    directness: getVal('seg-direct'),
+    proactivity: getVal('seg-proact'),
+    focus: getVal('seg-focus'),
+  };
+
+  try {
+    await fetch('http://127.0.0.1:8765/onboarding', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(config)
+    });
+  } catch(e) {}
+
+  if (window.pacify) {
+    await window.pacify.saveConfig({entity: config});
+  }
+
+  window.location.href = 'index.html';
+}
+
+// Input handler
+document.getElementById('inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendMsg();
+});
+
+// Start
+runIntro();
+</script>
+</body>
+</html>

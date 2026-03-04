@@ -1,0 +1,24 @@
+# SOUL — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# ── Core server ──────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+websockets==12.0
+httpx==0.27.0
+pydantic==2.7.0
+
+# ── Perception ───────────────────────────────────
+Pillow==10.3.0
+psutil==5.9.8
+
+# ── Voice — TTS ──────────────────────────────────
+pyttsx3==2.90
+
+# ── Utilities ────────────────────────────────────
+python-dotenv==1.0.1
+
+# ── Optional — uncomment as needed ───────────────
+# openai-whisper          # local STT
+# pyaudio==0.2.14         # mic input (needs portaudio)
+# pvporcupine==3.0.2      # hardware wake word (needs Picovoice key)
