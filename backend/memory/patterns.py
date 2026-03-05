@@ -96,10 +96,10 @@ def save_exchange(role: str, content: str, session_id: str = "default"):
         "INSERT INTO session_history (timestamp, role, content, session_id) VALUES (?, ?, ?, ?)",
         (datetime.now().isoformat(), role, content, session_id)
     )
-    # Keep only last 100 exchanges total to avoid unbounded growth
+    # Keep last 2000 — enough for full debug sessions
     conn.execute("""
         DELETE FROM session_history WHERE id NOT IN (
-            SELECT id FROM session_history ORDER BY id DESC LIMIT 100
+            SELECT id FROM session_history ORDER BY id DESC LIMIT 2000
         )
     """)
     conn.commit()
@@ -123,21 +123,52 @@ def load_recent_history(limit: int = 10) -> List[dict]:
 def format_memory_for_llm(limit: int = 8) -> str:
     """
     Format recent history as a compact memory summary for LLM injection.
-    Only includes the last few exchanges — not the full history.
+    Scrubs any stale user_name references from old sessions.
     """
     history = load_recent_history(limit)
     if not history:
         return ""
 
-    lines = ["Recent conversation context (from previous session):"]
+    # Load current config to get correct user_name
+    try:
+        from config import load_config as _lc
+        _cfg = _lc()
+        user_name = _cfg["entity"].get("user_name", "") or "User"
+        entity_name = _cfg["entity"].get("name", "SOUL") or "SOUL"
+    except Exception:
+        user_name = "User"
+        entity_name = "SOUL"
+
+    lines = ["[Recent context from previous session:]"]
     for h in history:
         ts = h["timestamp"][:16].replace("T", " ")
-        role_label = "User" if h["role"] == "user" else "SOUL"
-        # Truncate very long messages
+        role_label = user_name if h["role"] == "user" else entity_name
         content = h["content"][:200] + "..." if len(h["content"]) > 200 else h["content"]
+        # Scrub any stale hardcoded names — they should never appear in fresh injections
+        # Strip raw context packets that were mistakenly saved as assistant messages
+        if content.startswith("[") and "CPU:" in content and "RAM:" in content:
+            continue  # skip raw context echoes saved as messages
         lines.append(f"[{ts}] {role_label}: {content}")
 
+    if len(lines) <= 1:
+        return ""
     return "\n".join(lines)
+
+
+def scrub_stale_names(old_names: list):
+    """Remove session_history rows that contain any of the given old names.
+    Called on startup to purge stale hardcoded user references from old sessions.
+    """
+    if not old_names:
+        return
+    conn = get_db()
+    for name in old_names:
+        conn.execute(
+            "DELETE FROM session_history WHERE content LIKE ?",
+            (f"%{name}%",)
+        )
+    conn.commit()
+    conn.close()
 
 
 def save_key_fact(key: str, value: str):
@@ -214,7 +245,7 @@ class PatternEngine:
                     VALUES (?, ?, 'suggest_action', 1, 0, ?, ?, ?)
                 """, (
                     row["event_type"], row["value"], now, now,
-                    f"When {row['value']} → {event_type}: {value}"
+                    f"When {row['value']} -> {event_type}: {value}"
                 ))
         conn.commit()
         conn.close()

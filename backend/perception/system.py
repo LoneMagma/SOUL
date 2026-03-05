@@ -1,7 +1,5 @@
 """
 SOUL — Perception Layer
-Expanded: disk I/O, network, battery, active window title, smart task label.
-Active window via ctypes (no extra deps on Windows).
 """
 
 import asyncio
@@ -18,12 +16,7 @@ from typing import Optional
 import psutil
 
 
-# ─────────────────────────────────────────────
-# ACTIVE WINDOW — ctypes, zero deps
-# ─────────────────────────────────────────────
-
 def get_active_window_title() -> str:
-    """Get foreground window title on Windows."""
     try:
         if platform.system() != "Windows":
             return ""
@@ -38,10 +31,9 @@ def get_active_window_title() -> str:
         return ""
 
 
-# App name patterns → clean label
 TASK_PATTERNS = [
-    (r"Visual Studio Code[- ]+(.+)", "Coding · {}"),
     (r"(.+) - Visual Studio Code", "Coding · {}"),
+    (r"Visual Studio Code[- ]+(.+)", "Coding · {}"),
     (r"(.+) — Cursor", "Coding · {}"),
     (r"(.+) - Notepad\+\+", "Editing · {}"),
     (r"(.+) - Notepad", "Editing · {}"),
@@ -60,11 +52,10 @@ TASK_PATTERNS = [
     (r"File Explorer", "Files"),
     (r"Figma", "Design · Figma"),
     (r"Adobe Photoshop", "Design · Photoshop"),
-    (r"Adobe Premiere", "Video · Premiere"),
 ]
 
+
 def _get_soul_patterns():
-    """Load entity name from config so custom names are always filtered."""
     patterns = ["soul", "electron", "pacify"]
     try:
         from config import load_config
@@ -79,44 +70,29 @@ def _get_soul_patterns():
         pass
     return patterns
 
-SOUL_WINDOW_PATTERNS = ["soul", "electron", "pacify"]
-
 
 def parse_task_label(title: str) -> str:
-    """Convert raw window title to clean task label."""
     if not title:
         return ""
-
-    # Filter out SOUL's own window (dynamic — includes custom name)
     lower = title.lower()
-    patterns = _get_soul_patterns()
-    if any(p in lower for p in patterns):
+    if any(p in lower for p in _get_soul_patterns()):
         return ""
-
     for pattern, template in TASK_PATTERNS:
         m = re.match(pattern, title, re.IGNORECASE)
         if m:
             if m.lastindex and m.lastindex >= 1:
                 detail = m.group(1).strip()
-                # Truncate long file paths to just filename
                 if "/" in detail or "\\" in detail:
                     detail = detail.split("/")[-1].split("\\")[-1]
                 if len(detail) > 24:
                     detail = detail[:24] + "…"
                 return template.format(detail)
-            return template.format("") if "{}" in template else template
-
-    # Fallback: strip common suffixes and return clean title
-    cleaned = re.sub(r"\s*[-–—]\s*(Microsoft|Google|Mozilla|Apple|Adobe)\S*", "", title)
-    cleaned = cleaned.strip()
+            return template.replace("{}", "").strip()
+    cleaned = re.sub(r"\s*[-–—]\s*(Microsoft|Google|Mozilla|Apple|Adobe)\S*", "", title).strip()
     if len(cleaned) > 28:
         cleaned = cleaned[:28] + "…"
     return cleaned
 
-
-# ─────────────────────────────────────────────
-# SYSTEM MONITOR
-# ─────────────────────────────────────────────
 
 class SystemMonitor:
     def __init__(self):
@@ -130,14 +106,21 @@ class SystemMonitor:
     def snapshot(self) -> dict:
         return self._snapshot.copy()
 
+    def collect_now(self) -> dict:
+        try:
+            self._snapshot = self._collect()
+        except Exception as e:
+            print(f"[SOUL] collect_now error: {e}")
+        return self._snapshot.copy()
+
     async def start(self, interval: float = 3.0):
         self._running = True
         while self._running:
+            await asyncio.sleep(interval)
             try:
                 self._snapshot = self._collect()
             except Exception as e:
-                print(f"[SOUL] System monitor error: {e}")
-            await asyncio.sleep(interval)
+                print(f"[SOUL] monitor error: {e}")
 
     def stop(self):
         self._running = False
@@ -146,11 +129,11 @@ class SystemMonitor:
         now = time.time()
         elapsed = max(now - self._last_time, 0.1)
 
-        # CPU / RAM / GPU
-        cpu = psutil.cpu_percent(interval=None)
+        # First call always returns 0.0 (no baseline) — use 0.1s interval
+        cpu = psutil.cpu_percent(interval=0.1)
         ram = psutil.virtual_memory().percent
 
-        gpu_str = "—"
+        gpu_str = "N/A"
         try:
             import subprocess
             r = subprocess.run(
@@ -162,7 +145,6 @@ class SystemMonitor:
         except Exception:
             pass
 
-        # Network delta
         net = psutil.net_io_counters()
         sent_kb = (net.bytes_sent - self._last_net.bytes_sent) / elapsed / 1024
         recv_kb = (net.bytes_recv - self._last_net.bytes_recv) / elapsed / 1024
@@ -173,21 +155,19 @@ class SystemMonitor:
                 return f"{kb/1024:.1f}MB/s"
             return f"{kb:.0f}KB/s"
 
-        # Disk delta
-        disk_str_r = "—"
-        disk_str_w = "—"
+        disk_r = "—"
+        disk_w = "—"
         try:
             disk = psutil.disk_io_counters()
             if disk and self._last_disk:
                 dr = (disk.read_bytes - self._last_disk.read_bytes) / elapsed / 1024
                 dw = (disk.write_bytes - self._last_disk.write_bytes) / elapsed / 1024
-                disk_str_r = fmt_kb(dr)
-                disk_str_w = fmt_kb(dw)
+                disk_r = fmt_kb(dr)
+                disk_w = fmt_kb(dw)
             self._last_disk = disk
         except Exception:
             pass
 
-        # Battery
         battery_str = "—"
         battery_val = None
         try:
@@ -201,8 +181,17 @@ class SystemMonitor:
 
         self._last_time = now
 
-        # Active window
         raw_title = get_active_window_title()
+        # Filter out Windows OS chrome and SOUL's own windows
+        _os_noise = {
+            "task switching", "search", "start", "action center",
+            "notification", "desktop window manager", "program manager",
+            "windows input experience", "cortana", "", "—"
+        }
+        _soul_own = {"thinkiee", "soul", "workspace", "pacify"}
+        raw_lower = raw_title.lower()
+        if raw_lower in _os_noise or any(s in raw_lower for s in _soul_own):
+            raw_title = ""
         task_label = parse_task_label(raw_title)
         if not task_label:
             task_label = "—"
@@ -213,47 +202,77 @@ class SystemMonitor:
             "gpu": gpu_str,
             "net_sent": fmt_kb(sent_kb),
             "net_recv": fmt_kb(recv_kb),
-            "disk_read": disk_str_r,
-            "disk_write": disk_str_w,
+            "disk_read": disk_r,
+            "disk_write": disk_w,
             "battery": battery_str,
             "battery_pct": battery_val,
             "active_app": raw_title,
             "task_label": task_label,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
-# ─────────────────────────────────────────────
-# SCREEN WATCHER
-# ─────────────────────────────────────────────
-
 class ScreenWatcher:
-    def __init__(self, groq_client, interval_sec: int = 5):
+    def __init__(self, groq_client, thumb_interval: int = 2, vision_interval: int = 6):
         self.groq = groq_client
-        self.interval = interval_sec
-        self.summary = ""
-        self._running = False
+        self.thumb_interval  = thumb_interval   # seconds between thumbnail captures
+        self.vision_interval = vision_interval  # seconds between vision API calls
+        self.summary         = ""
+        self.thumbnail_b64      = ""
+        self._running           = False
+        self._last_vision_time  = 0.0  # unix timestamp of last successful vision capture
+        self._vision_counter = 0  # increments each thumb cycle, triggers vision every N
 
     async def start(self):
         self._running = True
+        vision_every = max(1, self.vision_interval // self.thumb_interval)
+        cycle = 0
         while self._running:
             try:
-                await self._capture()
+                await self._capture_thumb()
+                cycle += 1
+                if cycle >= vision_every:
+                    cycle = 0
+                    await self._capture_vision()
             except Exception as e:
-                print(f"[SOUL] Screen capture error: {e}")
-            await asyncio.sleep(self.interval)
+                print(f"[SOUL] screen watcher error: {e}")
+            await asyncio.sleep(self.thumb_interval)
 
     def stop(self):
         self._running = False
 
-    async def _capture(self):
+    async def _capture_thumb(self):
+        """Fast: grab screen, build 160x90 JPEG thumbnail only."""
         try:
             from PIL import ImageGrab
-            img = ImageGrab.grab()
-            img.thumbnail((1280, 720))
-            buf = BytesIO()
-            img.save(buf, format="PNG", optimize=True)
-            b64 = base64.b64encode(buf.getvalue()).decode()
-            self.summary = await self.groq.vision_query(b64)
+            img = ImageGrab.grab(all_screens=False)
+            thumb = img.copy()
+            thumb.thumbnail((400, 225))
+            tbuf = BytesIO()
+            thumb.save(tbuf, format="JPEG", quality=88, optimize=True)
+            self.thumbnail_b64 = base64.b64encode(tbuf.getvalue()).decode()
         except Exception as e:
+            print(f"[SOUL] thumbnail FAILED: {type(e).__name__}: {e}")
+            self.thumbnail_b64 = ""
+
+    async def _capture_vision(self):
+        """Slower: grab screen, encode PNG, call vision API."""
+        import time as _time
+        try:
+            from PIL import ImageGrab
+            img = ImageGrab.grab(all_screens=False)
+            vis = img.copy()
+            vis.thumbnail((1280, 720))
+            buf = BytesIO()
+            vis.save(buf, format="JPEG", quality=85, optimize=True)
+            b64 = base64.b64encode(buf.getvalue()).decode()
+            summary = await self.groq.vision_query(b64)
+            if summary and not summary.startswith("Screen vision unavail"):
+                self.summary = summary
+                self._last_vision_time = _time.time()
+                print(f"[SOUL] vision: {self.summary[:100]}")
+            else:
+                print(f"[SOUL] vision empty/unavail: {summary}")
+        except Exception as e:
+            print(f"[SOUL] vision FAILED: {type(e).__name__}: {e}")
             self.summary = f"Screen unavailable: {e}"

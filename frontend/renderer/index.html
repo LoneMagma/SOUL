@@ -23,10 +23,11 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body {
   font-family: 'Syne', sans-serif;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   width: 400px; height: 640px;
   overflow: hidden;
+  border-radius: 22px;
   user-select: none;
   -webkit-app-region: no-drag;
 }
@@ -39,19 +40,24 @@ body { animation: summon .22s cubic-bezier(.16,1,.3,1) both; }
 }
 
 /* ════════════ AMBIENT SHELL ════════════ */
-body.ambient { width:72px; height:72px; background:transparent !important; }
-body.ambient .shell { display:none; }
-body.ambient .amb { display:flex !important; }
+body.ambient {
+  width: 80px; height: 80px;
+  background: transparent !important;
+}
+body.ambient .shell { display:none !important; }
+body.ambient .amb   { display:flex !important; }
 
 .amb {
   display: none;
-  width: 72px; height: 72px;
+  width: 80px; height: 80px;
   border-radius: 50%;
-  background: rgba(10,11,18,0.92);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(139,124,248,0.28);
-  box-shadow: 0 6px 28px rgba(0,0,0,.7), 0 0 22px rgba(139,124,248,.14), inset 0 1px 0 rgba(255,255,255,.04);
+  /* Fully opaque so it floats visibly on any desktop background */
+  background: #0d0f18;
+  border: 1px solid rgba(139,124,248,0.35);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.85),
+    0 0 0 1px rgba(139,124,248,.1),
+    0 0 24px rgba(139,124,248,.12);
   align-items: center; justify-content: center;
   cursor: pointer; position: relative;
   animation: summon .18s ease both;
@@ -136,10 +142,11 @@ body.ambient .amb { display:flex !important; }
   width: 400px; height: 640px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 22px;
   display: flex; flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,.65);
+  box-shadow: 0 24px 64px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04);
+  will-change: opacity, transform;
 }
 
 /* Titlebar */
@@ -154,29 +161,36 @@ body.ambient .amb { display:flex !important; }
 .ctrl { width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;transition:opacity .15s; }
 .ctrl:hover{opacity:.75} .c-close{background:#ff5f56} .c-min{background:#ffbd2e} .c-amb{background:var(--teal)}
 
-.brand { font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--dim);text-transform:uppercase; }
+.brand {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size:10px;font-weight:700;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
+  pointer-events: none; -webkit-app-region: no-drag;
+}
+.titlebar { position: relative; }
 
-.hdr-right { -webkit-app-region:no-drag; display:flex; align-items:center; gap:9px; }
+.hdr-right { -webkit-app-region:no-drag; display:flex; align-items:center; gap:7px; }
 
-/* Eye toggle — visible pill */
+/* Eye toggle — icon-only circle, same size as traffic lights */
 .eye-toggle {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 9px;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
   cursor: pointer;
-  transition: all .15s;
-  font-size: 9px; font-weight: 600; letter-spacing: .08em;
+  transition: all .2s;
   color: var(--dim);
-  text-transform: uppercase;
+  flex-shrink: 0;
+  position: relative;
 }
-.eye-toggle:hover { border-color: rgba(139,124,248,.35); color: var(--text); }
-.eye-toggle.on { border-color: rgba(139,124,248,.4); color: var(--accent); background: var(--accent-soft); }
-.eye-toggle.off { opacity: .5; }
+.eye-toggle:hover { border-color: rgba(139,124,248,.45); color: var(--accent); }
+.eye-toggle.on { border-color: rgba(139,124,248,.5); color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 8px rgba(139,124,248,.2); }
+.eye-toggle.off { opacity: .45; }
 .eye-toggle svg { flex-shrink: 0; }
 
 .sdot { width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:sdot 2.8s ease-in-out infinite; }
+.ws-btn { height:24px;padding:0 8px;gap:5px;border-radius:7px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);transition:all .15s; }
+.ws-btn:hover { border-color:rgba(139,124,248,.4);color:var(--accent);background:var(--accent-soft); }
+.ws-btn.active { border-color:rgba(139,124,248,.5);color:var(--accent);background:var(--accent-soft); }
 @keyframes sdot{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* Signal entity */
@@ -259,10 +273,10 @@ body.ambient .amb { display:flex !important; }
 .err { background:rgba(238,110,110,.07);border-bottom:1px solid rgba(238,110,110,.15);padding:8px 14px;font-size:12px;color:var(--red);line-height:1.4;display:none;flex-shrink:0; }
 
 /* Chat */
-.chat{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
+.chat{flex:1;overflow-y:auto;padding:12px 14px 6px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
 .chat::-webkit-scrollbar{width:2px;} .chat::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);}
 
-.msg{max-width:86%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.55;animation:msgin .18s ease;}
+.msg{max-width:86%;padding:9px 13px;border-radius:16px;font-size:13px;line-height:1.55;animation:msgin .18s ease;}
 @keyframes msgin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .msg.user{align-self:flex-end;background:var(--accent-soft);border:1px solid rgba(139,124,248,.18);border-bottom-right-radius:3px;}
 .msg.soul{align-self:flex-start;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:3px;}
@@ -367,11 +381,17 @@ body.ambient .amb { display:flex !important; }
     </div>
     <span class="brand" id="entity-name">SOUL</span>
     <div class="hdr-right">
-      <button class="eye-toggle on" id="eye-toggle" onclick="toggleScreen()">
+      <button class="eye-toggle on" id="eye-toggle" onclick="toggleScreen()" title="Screen Awareness">
         <svg id="eye-svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
         </svg>
-        <span id="eye-label">SCREEN</span>
+      </button>
+      <button class="ws-btn" id="ws-btn" onclick="toggleWorkspace()" title="Workspace (Alt+W)">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">WORKSPACE</span>
       </button>
       <div class="sdot" id="sdot"></div>
     </div>
@@ -444,6 +464,13 @@ body.ambient .amb { display:flex !important; }
 
 <script>
 let ws = null, screenEnabled = true, isAmbient = false, notifTimer = null, kbdOpen = false;
+// Event buffer for workspace replay (persists across workspace open/close)
+const EVENT_BUFFER = [];
+const EVENT_BUFFER_MAX = 300;
+function bufferEvent(msg) {
+  EVENT_BUFFER.push(msg);
+  if (EVENT_BUFFER.length > EVENT_BUFFER_MAX) EVENT_BUFFER.shift();
+}
 
 // ── WebSocket ──────────────────────────────────
 async function connect() {
@@ -467,8 +494,10 @@ function handle(msg) {
       if (typeof msg.screen_enabled === 'boolean') setScreenUI(msg.screen_enabled);
       if (msg.task_label) setTaskLabel(msg.task_label);
       if (msg.stats) updateStats(msg.stats);
-      // Store computer name for potential display
       if (msg.computer_name) window._computerName = msg.computer_name;
+      // Correct input placeholder and workspace button label for entity name
+      const obj = msg.pronoun_object || 'her';
+      document.getElementById('inp').placeholder = `Talk to ${obj}…`;
       break;
     case 'user_message':
       addMsg('user', msg.text); break;
@@ -482,28 +511,60 @@ function handle(msg) {
       msg.active ? showThinking() : removeThinking();
       setState(msg.active ? 'thinking' : 'idle');
       break;
+    case 'action_step':
+      removeThinking();
+      if (msg.total > 1) {
+        // Show step progress inline
+        const existing = document.getElementById('step-progress');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.id = 'step-progress';
+        el.className = 'msg soul step-msg';
+        el.textContent = `Step ${msg.step}/${msg.total}: ${msg.display_text}`;
+        document.getElementById('chat').appendChild(el);
+        document.getElementById('chat').scrollTop = 99999;
+      }
+      break;
     case 'action_pending':
       removeThinking();
       showCard(msg.action_id, msg.display_text);
+      // Workspace relay is handled in the relay block at bottom of handle()
       break;
     case 'action_result':
       const r = msg.result;
       removeThinking();
-      if (r.cancelled) {
-        addMsg('soul', "Timed out waiting for confirmation.");
-      } else if (r.success) {
-        addMsg('soul', `Done — ${r.message}`);
-      } else {
-        const errMsg = r.error || r.message || "Something went wrong.";
-        addMsg('soul', `Couldn't do that. ${errMsg}`);
+      document.getElementById('step-progress')?.remove();
+      if (r.auto) {
+        // Auto-confirm: SILENT in chat — workspace shows the step result
+        // Only surface failures so the user knows something went wrong
+        if (!r.success && r.error && !r.error.includes('Unknown action')) {
+          addMsg('soul', `Couldn't do that — ${r.error}`);
+        }
+      } else if (r.cancelled) {
+        addMsg('soul', 'Action timed out.');
+      } else if (!r.success) {
+        addMsg('soul', `Couldn't do that — ${r.error || r.message || 'unknown error.'}`);
       }
+      // Success for non-auto: nothing — the LLM text already said what happened
       break;
     case 'system_stats':
-      updateStats(msg.stats); break;
+      updateStats(msg.stats);
+      // Relay FULL message including thumbnail
+      window.pacify?.sendWorkspace?.(msg);
+      window.pacify?.sendToOrb?.(msg);
+      break;
     case 'screen_toggled':
       setScreenUI(msg.enabled); break;
     case 'notification':
       showNotif(msg.text, msg.level); break;
+  }
+  // Buffer + relay all events to workspace and orb
+  const RELAY_TYPES = ['user_message','assistant_message','thinking',
+       'action_pending','action_result','action_step','system_stats'];
+  if (RELAY_TYPES.includes(msg.type)) {
+    bufferEvent(msg);
+    window.pacify?.sendWorkspace?.(msg);
+    if (msg.type !== 'system_stats') window.pacify?.sendToOrb?.(msg);
   }
 }
 
@@ -573,13 +634,12 @@ function clearChat() {
 
 // ── Stats ──────────────────────────────────────
 function updateStats(s) {
-  document.getElementById('sv-cpu').textContent = s.cpu ? `${Math.round(s.cpu)}%` : '—';
-  document.getElementById('sv-ram').textContent = s.ram ? `${Math.round(s.ram)}%` : '—';
+  document.getElementById('sv-cpu').textContent = s.cpu != null ? `${Math.round(s.cpu)}%` : '—';
+  document.getElementById('sv-ram').textContent = s.ram != null ? `${Math.round(s.ram)}%` : '—';
   document.getElementById('sv-gpu').textContent = s.gpu || '—';
-  const net = s.net_recv ? `↓${s.net_recv}` : '—';
-  document.getElementById('sv-net').textContent = net;
+  document.getElementById('sv-net').textContent = s.net_recv ? `↓${s.net_recv}` : '—';
   document.getElementById('sv-bat').textContent = s.battery || '—';
-  if (s.task_label) setTaskLabel(s.task_label);
+  if (s.task_label && s.task_label !== '—') setTaskLabel(s.task_label);
 }
 
 function setTaskLabel(label) {
@@ -612,17 +672,14 @@ function toggleScreen() {
 function setScreenUI(on) {
   screenEnabled = on;
   const tog = document.getElementById('eye-toggle');
-  const lbl = document.getElementById('eye-label');
   const bar = document.getElementById('screen-off');
-  tog.className = `eye-toggle ${on?'on':'off'}`;
-  lbl.textContent = on ? 'SCREEN' : 'SCREEN OFF';
-
+  if (tog) tog.className = `eye-toggle ${on?'on':'off'}`;
   const eyePath = on
     ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
     : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
-  document.getElementById('eye-svg').innerHTML = eyePath;
-  document.getElementById('amb-eye-icon').innerHTML = eyePath;
-  bar.style.display = on ? 'none' : 'block';
+  const eyeSvg = document.getElementById('eye-svg');
+  if (eyeSvg) eyeSvg.innerHTML = eyePath;
+  if (bar) bar.style.display = on ? 'none' : 'block';
 }
 
 // ── Notification ───────────────────────────────
@@ -640,13 +697,11 @@ function showNotif(text, level='info') {
 // ── Ambient ────────────────────────────────────
 function enterAmbient() {
   isAmbient = true;
-  document.body.classList.add('ambient');
   window.pacify?.setAmbient(true);
+  // Main process creates orb window + hides us
 }
 function exitAmbient() {
   isAmbient = false;
-  document.body.classList.remove('ambient');
-  document.getElementById('amb-badge').style.display = 'none';
   window.pacify?.setAmbient(false);
 }
 function handleAmbClick(e) {
@@ -664,13 +719,20 @@ function toggleKbd() {
 }
 
 // ── Input ──────────────────────────────────────
-document.getElementById('inp').addEventListener('keydown', e => { if (e.key==='Enter') sendText(); });
+let _sending = false;
+document.getElementById('inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.repeat) sendText();
+});
 function sendText() {
+  if (_sending) return;
   const inp = document.getElementById('inp');
   const text = inp.value.trim();
   if (!text) return;
   inp.value = '';
+  _sending = true;
   send({type:'user_text', text});
+  // Release lock after short debounce — enough to block double-fire, not enough to block next message
+  setTimeout(() => { _sending = false; }, 400);
 }
 
 // ── IPC ────────────────────────────────────────
@@ -680,12 +742,63 @@ window.pacify?.onBackendError?.(m => {
 });
 window.pacify?.onAmbientChange?.(on => {
   isAmbient = on;
-  document.body.classList.toggle('ambient', on);
+  if (!on) {
+    // Fade in when returning from ambient
+    const shell = document.querySelector('.shell');
+    if (shell) {
+      shell.style.opacity = '0';
+      shell.style.transform = 'scale(.97)';
+      shell.style.transition = 'opacity .28s ease, transform .28s ease';
+      requestAnimationFrame(() => {
+        shell.style.opacity = '1';
+        shell.style.transform = 'scale(1)';
+        setTimeout(() => { shell.style.transition = ''; shell.style.opacity = ''; shell.style.transform = ''; }, 300);
+      });
+    }
+  }
+  // ambient is now a separate window — nothing to toggle here
 });
 window.pacify?.onShortcut?.(key => {
   if (key === 'toggle_screen') toggleScreen();
   else if (key === 'clear_chat') clearChat();
   else if (key === 'focus_input') document.getElementById('inp').focus();
+});
+
+// ── Workspace ──────────────────────────────────
+let workspaceOpen = false;
+
+function toggleWorkspace() {
+  window.pacify?.toggleWorkspace();
+}
+
+window.pacify?.onWorkspaceOpened?.(() => {
+  workspaceOpen = true;
+  document.getElementById('ws-btn').classList.add('active');
+  // Replay buffered events so workspace has full history
+  setTimeout(() => {
+    EVENT_BUFFER.forEach(e => window.pacify?.sendWorkspace?.(e));
+  }, 350); // wait for workspace window to finish loading
+});
+window.pacify?.onWorkspaceClosed?.(() => {
+  workspaceOpen = false;
+  document.getElementById('ws-btn').classList.remove('active');
+});
+
+// (workspace relay is inside handle() above)
+
+// Handle messages coming from workspace panel
+window.pacify?.onWorkspaceToMain?.(data => {
+  if (data.type === 'action_confirm_from_workspace') {
+    send({ type: 'action_confirm', action_id: data.action_id });
+  } else if (data.type === 'action_reject_from_workspace') {
+    send({ type: 'action_reject', action_id: data.action_id });
+  } else if (data.type === 'set_permission_tier') {
+    send({ type: 'set_permission_tier', tier: data.tier });
+  } else if (data.type === 'quick_action_text') {
+    // Workspace quick action button -> send as user message
+    send({ type: 'user_text', text: data.text });
+    addMsg('user', data.text);
+  }
 });
 
 connect();

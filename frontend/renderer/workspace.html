@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SOUL Workspace</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap');
+:root {
+  --bg:#06080d; --s1:rgba(255,255,255,.03); --b1:rgba(255,255,255,.065);
+  --acc:#8b7cf8; --as:rgba(139,124,248,.1); --ab:rgba(139,124,248,.35);
+  --text:#ddd8f3; --dim:rgba(221,216,243,.34); --dim2:rgba(221,216,243,.62);
+  --green:#4de89c; --gs:rgba(77,232,156,.08); --gb:rgba(77,232,156,.28);
+  --red:#ee6e6e; --rs:rgba(238,110,110,.07); --rb:rgba(238,110,110,.22);
+  --warn:#f5bf5a; --ws:rgba(245,191,90,.07); --wb:rgba(245,191,90,.22);
+  --blue:#60a5fa; --bs:rgba(96,165,250,.07); --bb:rgba(96,165,250,.22);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{font-family:'Syne',sans-serif;background:transparent;color:var(--text);
+  width:480px;height:720px;overflow:hidden;user-select:none;-webkit-app-region:no-drag;
+  border-radius:22px;}
+body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
+@keyframes slide{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
+.shell{width:480px;height:720px;background:var(--bg);border:1px solid var(--b1);
+  border-radius:22px;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 28px 70px rgba(0,0,0,.85),-6px 0 32px rgba(0,0,0,.35)}
+
+/* ── Titlebar ── */
+.tb{height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;border-bottom:1px solid var(--b1);-webkit-app-region:drag}
+.tl{display:flex;align-items:center;gap:8px;-webkit-app-region:no-drag}
+.cls{width:10px;height:10px;border-radius:50%;background:#ff5f56;border:none;cursor:pointer}
+.cls:hover{opacity:.7}
+.tb-name{font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--dim);
+  text-transform:uppercase;-webkit-app-region:drag}
+.tr{display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag}
+.cdot{width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 5px var(--red);transition:all .3s}
+.cdot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.pill{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;transition:all .2s}
+.pill.idle{background:var(--s1);border:1px solid var(--b1);color:var(--dim)}
+.pill.active{background:var(--gs);border:1px solid var(--gb);color:var(--green)}
+.pill.thinking{background:var(--bs);border:1px solid var(--bb);color:var(--blue)}
+.ibtn{width:28px;height:28px;border-radius:8px;background:var(--s1);border:1px solid var(--b1);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--dim);transition:all .14s}
+.ibtn:hover,.ibtn.on{border-color:var(--ab);color:var(--acc);background:var(--as)}
+
+/* ── Tabs ── */
+.tabs{height:36px;flex-shrink:0;display:flex;align-items:center;
+  border-bottom:1px solid var(--b1);padding:0 14px;gap:2px}
+.tab{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 12px;border-radius:7px;cursor:pointer;color:var(--dim);
+  transition:all .14s;border:1px solid transparent;position:relative}
+.tab:hover{color:var(--dim2)}
+.tab.on{background:var(--as);border-color:var(--ab);color:var(--acc)}
+.tbadge{display:none;position:absolute;top:-2px;right:-2px;
+  background:var(--warn);color:#000;font-size:7px;font-weight:800;
+  width:13px;height:13px;border-radius:50%;align-items:center;justify-content:center}
+.tbadge.show{display:flex}
+
+/* ── Panels ── */
+.panel{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.panel.on{display:flex}
+
+/* ────────────────────────────────────────────
+   LIVE PANEL
+──────────────────────────────────────────── */
+.live-wrap{flex:1;display:flex;flex-direction:column;min-height:0}
+.screen-thumb-wrap{padding:10px 14px 0;flex-shrink:0}
+.screen-thumb{width:100%;height:180px;border-radius:10px;
+  background:var(--s1);border:1px solid var(--b1);
+  overflow:hidden;position:relative;cursor:pointer}
+.screen-thumb img{width:100%;height:100%;object-fit:cover;object-position:top}
+.screen-thumb-placeholder{display:flex;align-items:center;justify-content:center;
+  height:100%;font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.screen-thumb-lbl{position:absolute;bottom:4px;right:7px;
+  font-size:8px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+
+/* processes strip */
+.procs-strip{padding:8px 14px 0;flex-shrink:0}
+.procs-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.proc-chip{font-family:'JetBrains Mono',monospace;font-size:8px;
+  padding:4px 7px;border-radius:7px;background:var(--s1);border:1px solid var(--b1);
+  color:var(--dim2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:border-color .12s;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.proc-chip:hover{border-color:var(--ab)}
+.proc-chip .pn{overflow:hidden;text-overflow:ellipsis;min-width:0;color:var(--text)}
+.proc-chip b{color:var(--acc);flex-shrink:0}
+
+.live-feed{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.live-feed::-webkit-scrollbar{width:2px}
+.live-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.05)}
+.msg-row{display:flex;flex-direction:column;gap:2px;animation:pop .15s ease both}
+.msg-role{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);padding:0 4px}
+.msg-role.soul{color:var(--acc)}
+.msg-bubble{font-size:11.5px;line-height:1.55;padding:8px 11px;border-radius:10px;
+  background:var(--s1);border:1px solid var(--b1);color:var(--text)}
+.msg-bubble.soul{background:var(--as);border-color:rgba(139,124,248,.18);color:var(--dim2);border-radius:10px 10px 10px 3px}
+.msg-bubble.user{border-radius:10px 10px 3px 10px}
+.msg-bubble.step{opacity:.55;font-size:10.5px;font-style:italic;background:transparent;border-color:transparent;padding:2px 4px}
+.think-row{display:flex;align-items:center;gap:6px;padding:4px;animation:pop .15s ease both}
+.think-dots{display:flex;gap:3px}
+.tdot{width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.4}
+.tdot:nth-child(1){animation:blink 1.2s .0s infinite}
+.tdot:nth-child(2){animation:blink 1.2s .2s infinite}
+.tdot:nth-child(3){animation:blink 1.2s .4s infinite}
+
+/* ────────────────────────────────────────────
+   TASK PLANNER
+──────────────────────────────────────────── */
+.planner{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.planner::-webkit-scrollbar{width:2px}
+.planner-empty{font-size:11px;color:var(--dim);text-align:center;padding:32px 0}
+.task-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;
+  padding:12px 14px;animation:pop .16s ease both}
+.task-card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.task-card-title{font-size:11px;font-weight:700;color:var(--text);flex:1}
+.task-card-ts{font-size:8px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.task-steps{display:flex;flex-direction:column;gap:4px}
+.step-row{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:8px;
+  border:1px solid transparent;transition:all .15s}
+.step-row.pending{background:var(--s1);color:var(--dim)}
+.step-row.running{background:var(--bs);border-color:var(--bb);color:var(--blue)}
+.step-row.done{background:rgba(77,232,156,.04);border-color:rgba(77,232,156,.1);color:var(--green)}
+.step-row.failed{background:var(--rs);border-color:var(--rb);color:var(--red)}
+.step-icon{font-size:10px;width:14px;flex-shrink:0;text-align:center;font-family:'JetBrains Mono',monospace}
+.step-run-spin{width:10px;height:10px;border-radius:50%;border:1.5px solid transparent;
+  border-top-color:var(--blue);animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step-text{font-size:10.5px;flex:1;line-height:1.3}
+.step-result{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-left:22px;padding:2px 0;word-break:break-word}
+
+/* ────────────────────────────────────────────
+   QUEUE PANEL
+──────────────────────────────────────────── */
+.q-list{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.q-empty{font-size:11px;color:var(--dim);text-align:center;padding:32px 0}
+.qcard{background:var(--ws);border:1px solid var(--wb);border-radius:11px;
+  padding:12px 14px;animation:pop .16s ease both}
+.qcard-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.qcard-txt{font-size:12px;color:var(--text);flex:1;line-height:1.4}
+.qcard-timer{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.qcard-btns{display:flex;gap:6px}
+.qb{font-size:10px;font-weight:700;padding:5px 14px;border-radius:7px;
+  border:none;cursor:pointer;font-family:'Syne',sans-serif;transition:all .12s;flex:1}
+.qb-ok{background:var(--gs);border:1px solid var(--gb);color:var(--green)}
+.qb-no{background:var(--rs);border:1px solid var(--rb);color:var(--red)}
+.qb-ok:hover{background:rgba(77,232,156,.18)}.qb-no:hover{background:rgba(238,110,110,.16)}
+
+/* ────────────────────────────────────────────
+   LOG PANEL
+──────────────────────────────────────────── */
+.log-toolbar{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;flex-shrink:0;border-bottom:1px solid var(--b1)}
+.log-export{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 10px;border-radius:7px;background:var(--gs);border:1px solid var(--gb);
+  color:var(--green);cursor:pointer;transition:all .12s}
+.log-export:hover{background:rgba(77,232,156,.18)}
+.log-clr{font-size:9px;color:var(--dim);cursor:pointer;background:none;border:none;
+  font-family:'Syne',sans-serif;padding:4px 8px;border-radius:5px}
+.log-clr:hover{color:var(--text)}
+.log-list{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:2px}
+.log-list::-webkit-scrollbar{width:2px}
+.log-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.05)}
+.le{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;
+  border-radius:8px;border:1px solid transparent;animation:pop .14s ease both}
+.le.ok{background:rgba(77,232,156,.04);border-color:rgba(77,232,156,.1)}
+.le.err{background:rgba(238,110,110,.04);border-color:rgba(238,110,110,.1)}
+.le.act{background:rgba(245,191,90,.04);border-color:rgba(245,191,90,.1)}
+.le.inf{background:var(--s1)}
+.le.auto{background:rgba(139,124,248,.03);border-color:rgba(139,124,248,.08)}
+.le-icon{font-size:10px;flex-shrink:0;margin-top:1px;width:12px;text-align:center;font-family:'JetBrains Mono',monospace}
+.le-body{flex:1;min-width:0}
+.le-text{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text);line-height:1.4;word-break:break-word}
+.le-time{font-size:8px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.log-empty{font-size:11px;color:var(--dim);text-align:center;padding:28px 0}
+
+/* ────────────────────────────────────────────
+   SETTINGS PANEL
+──────────────────────────────────────────── */
+.settings-body{flex:1;overflow-y:auto;padding:14px}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:8px;display:block}
+.tier-row{display:flex;gap:6px;margin-bottom:16px}
+.tier{flex:1;padding:10px 6px;border-radius:10px;background:var(--s1);
+  border:1px solid var(--b1);cursor:pointer;transition:all .13s;text-align:center}
+.tier:hover{border-color:var(--ab)}
+.tier.on{background:var(--as);border-color:var(--ab)}
+.tier-n{font-size:11px;font-weight:700;color:var(--dim2);display:block}
+.tier-d{font-size:8.5px;color:var(--dim);display:block;margin-top:3px;line-height:1.4}
+.tier.on .tier-n{color:var(--acc)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);margin-bottom:6px}
+.setting-label{font-size:11px;color:var(--dim2)}
+.setting-sub{font-size:9px;color:var(--dim);margin-top:2px}
+.toggle{width:32px;height:18px;border-radius:9px;background:rgba(255,255,255,.08);
+  border:1px solid var(--b1);cursor:pointer;position:relative;transition:background .2s}
+.toggle.on{background:var(--acc)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;
+  border-radius:50%;background:white;transition:left .2s}
+.toggle.on::after{left:16px}
+
+/* ── Bottom ── */
+.bottom{height:36px;border-top:1px solid var(--b1);display:flex;align-items:center;
+  justify-content:space-between;padding:0 14px;flex-shrink:0}
+.stats{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);display:flex;gap:12px}
+.stats b{color:var(--dim2)}
+.hint{font-size:8px;color:var(--dim);letter-spacing:.08em}
+/* ── Shortcuts ── */
+.shortcut-list{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:7px;background:rgba(139,124,248,.03);border:1px solid rgba(139,124,248,.07)}
+.shortcut-key{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;color:var(--acc);background:rgba(139,124,248,.1);padding:2px 6px;border-radius:4px;white-space:nowrap}
+.shortcut-desc{font-size:10px;color:var(--dim2);text-align:right}
+
+/* ── About panel ── */
+.about-scroll{flex:1;overflow-y:auto;padding:14px}
+.about-scroll::-webkit-scrollbar{width:2px}
+.about-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.05)}
+
+.about-hero{text-align:center;padding:10px 0 16px;border-bottom:1px solid var(--b1);margin-bottom:14px}
+.about-hero-name{font-size:28px;font-weight:800;letter-spacing:.22em;
+  background:linear-gradient(135deg,#ddd8f3 0%,#8b7cf8 50%,#60a5fa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.about-hero-sub{font-size:8.5px;color:var(--dim);letter-spacing:.2em;margin-top:6px;text-transform:uppercase}
+.about-hero-ver{display:inline-block;margin-top:8px;padding:3px 10px;border-radius:20px;
+  background:var(--as);border:1px solid var(--ab);font-size:8px;font-weight:700;
+  letter-spacing:.12em;color:var(--acc);text-transform:uppercase}
+
+.about-section{margin-bottom:12px}
+.about-section-label{font-size:8px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:6px;padding-left:2px}
+
+/* Link row */
+.about-links{display:flex;flex-direction:column;gap:4px}
+.about-link{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);
+  color:var(--dim2);font-size:10.5px;font-weight:600;text-decoration:none;
+  cursor:pointer;transition:all .14s;-webkit-app-region:no-drag}
+.about-link:hover{border-color:var(--ab);color:var(--text);background:var(--as)}
+.about-link-left{display:flex;align-items:center;gap:9px}
+.about-link-icon{width:20px;height:20px;border-radius:6px;background:rgba(139,124,248,.1);
+  border:1px solid rgba(139,124,248,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.about-link-url{font-size:8.5px;color:var(--dim);margin-top:1px;font-family:"JetBrains Mono",monospace}
+.about-link-arr{font-size:10px;color:var(--dim);transition:color .14s}
+.about-link:hover .about-link-arr{color:var(--acc)}
+
+/* Stack chips */
+.about-stack{display:flex;flex-wrap:wrap;gap:5px}
+.stack-chip{display:flex;flex-direction:column;gap:2px;
+  padding:8px 10px;border-radius:9px;background:var(--s1);border:1px solid var(--b1);
+  flex:1;min-width:120px;transition:border-color .13s}
+.stack-chip:hover{border-color:var(--ab)}
+.stack-chip-name{font-size:10px;font-weight:700;color:var(--text)}
+.stack-chip-role{font-size:8.5px;color:var(--dim);line-height:1.4;margin-top:1px}
+
+/* Credit block */
+.about-credit{padding:10px 12px;border-radius:10px;background:rgba(139,124,248,.04);
+  border:1px solid rgba(139,124,248,.14)}
+.about-credit-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.about-credit-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);
+  box-shadow:0 0 6px rgba(139,124,248,.6)}
+.about-credit-name{font-size:11px;font-weight:700;color:var(--acc)}
+.about-credit-role{font-size:9px;color:var(--dim2);line-height:1.5}
+
+/* MIT footer */
+.about-footer{text-align:center;padding:8px 0 2px;font-size:8.5px;
+  color:var(--dim);letter-spacing:.08em}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="tb">
+    <div class="tl">
+      <button class="cls" onclick="window.pacify?.closeWorkspace()"></button>
+      <span class="tb-name">Workspace</span>
+    </div>
+    <div class="tr">
+      <div class="cdot" id="cdot"></div>
+      <span class="pill idle" id="pill">IDLE</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" id="tab-live"     onclick="showTab('live')">Live</div>
+    <div class="tab"    id="tab-planner"  onclick="showTab('planner')">
+      Tasks
+      <span class="tbadge" id="plan-badge"></span>
+    </div>
+    <div class="tab"    id="tab-queue"    onclick="showTab('queue')">
+      Queue
+      <span class="tbadge" id="q-badge"></span>
+    </div>
+    <div class="tab"    id="tab-log"      onclick="showTab('log')">Log</div>
+    <div class="tab"    id="tab-settings" onclick="showTab('settings')">Settings</div>
+    <div class="tab"    id="tab-about"    onclick="showTab('about')">About</div>
+  </div>
+
+  <!-- LIVE -->
+  <div class="panel on" id="panel-live">
+    <div class="live-wrap">
+      <div class="screen-thumb-wrap">
+        <div class="screen-thumb" id="screen-thumb">
+          <div class="screen-thumb-placeholder" id="thumb-placeholder">no screen capture</div>
+          <img id="thumb-img" style="display:none">
+          <span class="screen-thumb-lbl" id="thumb-ts"></span>
+        </div>
+      </div>
+      <div class="procs-strip">
+        <div class="procs-row" id="procs-row"></div>
+      </div>
+      <div class="live-feed" id="live-feed">
+        <div style="font-size:11px;color:var(--dim);text-align:center;padding:16px 0">Waiting for activity...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK PLANNER -->
+  <div class="panel" id="panel-planner">
+    <div class="planner" id="planner">
+      <div class="planner-empty" id="plan-empty">No tasks yet</div>
+    </div>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="panel" id="panel-queue">
+    <div class="q-list" id="q-list">
+      <div class="q-empty" id="q-empty">No pending confirmations</div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="panel" id="panel-log">
+    <div class="log-toolbar">
+      <span class="slbl" style="margin:0">Execution Log</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="log-export" onclick="exportLog()">Export</button>
+        <button class="log-clr" onclick="clearLog()">clear</button>
+      </div>
+    </div>
+    <div class="log-list" id="log-list">
+      <div class="log-empty" id="log-empty">no activity yet</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="panel-settings">
+    <div class="settings-body">
+      <span class="slbl">Permission Mode</span>
+      <div class="tier-row">
+        <div class="tier" id="t-min" onclick="setTier('minimal')">
+          <span class="tier-n">Minimal</span>
+          <span class="tier-d">Apps only<br>Confirm all</span>
+        </div>
+        <div class="tier on" id="t-std" onclick="setTier('standard')">
+          <span class="tier-n">Standard</span>
+          <span class="tier-d">Files + web<br>Confirm destructive</span>
+        </div>
+        <div class="tier" id="t-full" onclick="setTier('full')">
+          <span class="tier-n">Full</span>
+          <span class="tier-d">All actions<br>No confirms</span>
+        </div>
+      </div>
+
+      <span class="slbl">Perception</span>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Screen Capture</div>
+          <div class="setting-sub">Vision context for responses</div>
+        </div>
+        <div class="toggle on" id="screen-toggle" onclick="toggleScreen()"></div>
+      </div>
+
+      <span class="slbl">Keyboard Shortcuts</span>
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span class="shortcut-key">Alt + S</span><span class="shortcut-desc">Summon / focus window</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Alt + Z</span><span class="shortcut-desc">Toggle ambient orb mode</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Alt + W</span><span class="shortcut-desc">Toggle workspace panel</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Alt + T</span><span class="shortcut-desc">Focus chat input</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Alt + E</span><span class="shortcut-desc">Toggle screen awareness</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Alt + X</span><span class="shortcut-desc">Clear chat history</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Double-click orb</span><span class="shortcut-desc">Exit ambient mode</span></div>
+        <div class="shortcut-row"><span class="shortcut-key">Right-click orb</span><span class="shortcut-desc">Open workspace</span></div>
+      </div>
+
+      <span class="slbl">Debug</span>
+      <div class="setting-row" style="cursor:pointer" onclick="exportLog()">
+        <div>
+          <div class="setting-label">Export Chat Log</div>
+          <div class="setting-sub">Download session as Markdown</div>
+        </div>
+        <div style="font-size:14px;color:var(--dim)">↓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="panel" id="panel-about">
+    <div class="about-scroll">
+
+      <!-- Hero -->
+      <div class="about-hero">
+        <div class="about-hero-name">SOUL</div>
+        <div class="about-hero-sub">Device Companion &nbsp;·&nbsp; Always-On AI</div>
+        <div class="about-hero-ver">V1.3 Beta</div>
+      </div>
+
+      <!-- Creator -->
+      <div class="about-section">
+        <div class="about-section-label">Creator</div>
+        <div class="about-links">
+          <div class="about-link" onclick="openLink('https://github.com/LoneMagma')">
+            <div class="about-link-left">
+              <div class="about-link-icon">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">LoneMagma</div>
+                <div class="about-link-url">github.com/LoneMagma</div>
+              </div>
+            </div>
+            <span class="about-link-arr">↗</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Repository -->
+      <div class="about-section">
+        <div class="about-section-label">Source</div>
+        <div class="about-links">
+          <div class="about-link" onclick="openLink('https://github.com/LoneMagma/SOUL')">
+            <div class="about-link-left">
+              <div class="about-link-icon">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">LoneMagma / SOUL</div>
+                <div class="about-link-url">github.com/LoneMagma/SOUL</div>
+              </div>
+            </div>
+            <span class="about-link-arr">↗</span>
+          </div>
+          <div class="about-link" onclick="openLink('https://github.com/LoneMagma')">
+            <div class="about-link-left">
+              <div class="about-link-icon">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">@LoneMagma</div>
+                <div class="about-link-url">github.com/LoneMagma</div>
+              </div>
+            </div>
+            <span class="about-link-arr">↗</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tech Stack -->
+      <div class="about-section">
+        <div class="about-section-label">Tech Stack</div>
+        <div class="about-stack">
+          <div class="stack-chip">
+            <span class="stack-chip-name">Electron</span>
+            <span class="stack-chip-role">Desktop shell, transparent windows, IPC bridge</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">FastAPI</span>
+            <span class="stack-chip-role">Python backend, WebSocket event bus, REST endpoints</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Groq API</span>
+            <span class="stack-chip-role">LLM inference — llama-3.3-70b + vision</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Pillow</span>
+            <span class="stack-chip-role">Screen capture, thumbnail pipeline</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">SQLite</span>
+            <span class="stack-chip-role">Persistent memory, pattern engine, key facts</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">psutil</span>
+            <span class="stack-chip-role">System stats, process monitoring</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Built with Claude -->
+      <div class="about-section">
+        <div class="about-section-label">Built with</div>
+        <div class="about-credit">
+          <div class="about-credit-top">
+            <div class="about-credit-dot"></div>
+            <span class="about-credit-name">Claude AI — Anthropic</span>
+          </div>
+          <div class="about-credit-role">
+            Coding assistant. Used for code generation, debugging, architecture review, and implementation across the backend and frontend during development.
+          </div>
+        </div>
+      </div>
+
+      <div class="about-footer">Open Source &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; V1.3 Beta</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="stats">
+      <span>CPU <b id="bcpu">--</b></span>
+      <span>RAM <b id="bram">--</b></span>
+      <span>NET <b id="bnet">--</b></span>
+      <span>BAT <b id="bbat">--</b></span>
+    </div>
+    <span class="hint">ALT+W</span>
+  </div>
+
+</div>
+<script>
+let tier='standard', pendingQ={}, curTab='live', activePlan=null, taskPlans=[];
+
+// ── Tabs ──────────────────────────────────────
+function showTab(t) {
+  curTab=t;
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('on'));
+  document.getElementById(`tab-${t}`).classList.add('on');
+  document.getElementById(`panel-${t}`).classList.add('on');
+  // Auto-scroll to bottom when switching to live feed or planner
+  requestAnimationFrame(() => {
+    if (t === 'live') {
+      const f = document.getElementById('live-feed');
+      if (f) f.scrollTop = f.scrollHeight;
+    } else if (t === 'planner') {
+      const p = document.getElementById('planner');
+      if (p) p.scrollTop = 0; // planner newest is at top
+    }
+  });
+}
+
+// ── Connection ────────────────────────────────
+function setConn(v) { document.getElementById('cdot').className='cdot'+(v?' on':''); }
+
+function setPill(s) {
+  const el=document.getElementById('pill');
+  const m={idle:['idle','IDLE'],active:['active','ACTIVE'],thinking:['thinking','THINKING']};
+  const [c,t]=m[s]||m.idle; el.className=`pill ${c}`; el.textContent=t;
+}
+
+// ── Screen thumbnail ──────────────────────────
+let thumbTs = '';
+function updateThumb(b64) {
+  if (!b64) return;
+  const img = document.getElementById('thumb-img');
+  const ph  = document.getElementById('thumb-placeholder');
+  img.src = 'data:image/jpeg;base64,' + b64;
+  img.style.display = 'block';
+  ph.style.display = 'none';
+  thumbTs = new Date().toTimeString().slice(0,8);
+  document.getElementById('thumb-ts').textContent = thumbTs;
+}
+
+// ── Processes ─────────────────────────────────
+function updateProcesses(procs) {
+  const row = document.getElementById('procs-row');
+  row.innerHTML = '';
+  if (!procs || !procs.length) return;
+  procs.slice(0,4).forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'proc-chip';
+    // Truncate name: strip .exe, max 12 chars
+    let name = (p.name||'?').replace(/\.exe$/i,'');
+    if (name.length > 11) name = name.slice(0,10) + '…';
+    const mem = (p.memory_percent||0).toFixed(1);
+    chip.innerHTML = `<span class="pn">${esc(name)}</span><b>${mem}%</b>`;
+    row.appendChild(chip);
+  });
+}
+
+// Poll processes every 8s
+function pollProcesses() {
+  fetch('http://127.0.0.1:8765/processes')
+    .then(r=>r.json())
+    .then(d=>updateProcesses(d.processes))
+    .catch(()=>{});
+}
+setInterval(pollProcesses, 8000);
+setTimeout(pollProcesses, 1500);
+
+// ── Live feed ─────────────────────────────────
+function addToFeed(role, text, type='normal') {
+  const feed=document.getElementById('live-feed');
+  feed.querySelector('[style*="Waiting"]')?.remove();
+  const row=document.createElement('div'); row.className='msg-row';
+  const roleEl=document.createElement('div'); roleEl.className=`msg-role ${role}`;
+  roleEl.textContent=role==='soul'?'◉ SOUL':'▸ YOU';
+  const bubble=document.createElement('div');
+  bubble.className=`msg-bubble ${role}${type==='step'?' step':''}`;
+  bubble.textContent=text;
+  row.appendChild(roleEl); row.appendChild(bubble);
+  feed.appendChild(row); feed.scrollTop=feed.scrollHeight;
+}
+let thinkEl=null;
+function showThinking(){if(thinkEl)return;const f=document.getElementById('live-feed');thinkEl=document.createElement('div');thinkEl.className='think-row';thinkEl.innerHTML='<div class="think-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div><span style="font-size:10px;color:var(--acc)">thinking</span>';f.appendChild(thinkEl);f.scrollTop=f.scrollHeight;}
+function hideThinking(){thinkEl?.remove();thinkEl=null;}
+
+// ── Task Planner ──────────────────────────────
+function startPlan(trigger) {
+  document.getElementById('plan-empty')?.remove();
+  activePlan = {
+    id: Date.now(),
+    trigger: trigger,
+    steps: [],
+    ts: new Date().toTimeString().slice(0,8)
+  };
+  taskPlans.unshift(activePlan);
+  renderPlan(activePlan);
+  updatePlanBadge();
+  // Switch to planner tab for multi-step tasks
+  // (don't auto-switch for single actions)
+}
+
+function renderPlan(plan) {
+  const planner = document.getElementById('planner');
+  const existing = document.getElementById(`plan-${plan.id}`);
+  if (existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.className = 'task-card'; card.id = `plan-${plan.id}`;
+  card.innerHTML = `
+    <div class="task-card-hdr">
+      <div class="task-card-title">${esc(plan.trigger.slice(0,60))}</div>
+      <div class="task-card-ts">${plan.ts}</div>
+    </div>
+    <div class="task-steps" id="steps-${plan.id}"></div>`;
+  // Insert at top
+  const first = planner.querySelector('.task-card');
+  if (first) planner.insertBefore(card, first);
+  else planner.appendChild(card);
+
+  plan.steps.forEach(s => renderStep(plan.id, s));
+
+  // Prune old cards
+  const all = planner.querySelectorAll('.task-card');
+  if (all.length > 10) all[all.length-1].remove();
+}
+
+function renderStep(planId, step) {
+  const container = document.getElementById(`steps-${planId}`);
+  if (!container) return;
+  let el = document.getElementById(`step-${planId}-${step.index}`);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = `step-${planId}-${step.index}`;
+    container.appendChild(el);
+  }
+  const iconMap = {pending:'○', running:'', done:'+', failed:'x'};
+  const icon = step.status === 'running'
+    ? '<div class="step-run-spin"></div>'
+    : `<span class="step-icon">${iconMap[step.status]||'○'}</span>`;
+  el.className = `step-row ${step.status}`;
+  el.innerHTML = `${icon}<span class="step-text">${esc(step.text)}</span>`;
+  if (step.result) {
+    el.innerHTML += `<div class="step-result">${esc(step.result.slice(0,80))}</div>`;
+  }
+}
+
+function updatePlanBadge() {
+  const active = taskPlans.filter(p => p.steps.some(s=>s.status==='running')).length;
+  const badge = document.getElementById('plan-badge');
+  if (active > 0) { badge.textContent=active; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+}
+
+// ── Queue ─────────────────────────────────────
+function updateQBadge() {
+  const count = Object.keys(pendingQ).length;
+  const badge = document.getElementById('q-badge');
+  if (count>0){ badge.textContent=count; badge.classList.add('show'); }
+  else badge.classList.remove('show');
+}
+
+function addQCard(id, txt) {
+  document.getElementById('q-empty')?.remove();
+  const list=document.getElementById('q-list');
+  const el=document.createElement('div'); el.className='qcard'; el.id=`q-${id}`;
+  let s=29;
+  el.innerHTML=`<div class="qcard-top"><span style="font-size:12px">!</span><span class="qcard-txt">${esc(txt)}</span><span class="qcard-timer" id="qt-${id}">${s}s</span></div><div class="qcard-btns"><button class="qb qb-ok" onclick="qOk('${id}')">Accept</button><button class="qb qb-no" onclick="qNo('${id}')">Cancel</button></div>`;
+  list.appendChild(el); updateQBadge();
+  if (curTab==='live') showTab('queue');
+  const iv=setInterval(()=>{s--;const t=document.getElementById(`qt-${id}`);if(!t){clearInterval(iv);return;}if(s<=0){clearInterval(iv);rmQ(id);addLog('inf','-',`Timed out: ${txt.slice(0,40)}`);}else{t.textContent=`${s}s`;if(s<=10)t.style.color='var(--red)';}},1000);
+  pendingQ[id]={iv,txt};
+}
+function rmQ(id){clearInterval(pendingQ[id]?.iv);delete pendingQ[id];document.getElementById(`q-${id}`)?.remove();if(!document.querySelector('.qcard')){document.getElementById('q-list').innerHTML='<div class="q-empty" id="q-empty">No pending confirmations</div>';if(curTab==='queue')showTab('live');}updateQBadge();}
+function qOk(id){window.pacify?.sendToMain({type:'action_confirm_from_workspace',action_id:id});addLog('act','>',`Confirmed: ${pendingQ[id]?.txt?.slice(0,50)||id}`);setPill('active');rmQ(id);}
+function qNo(id){window.pacify?.sendToMain({type:'action_reject_from_workspace',action_id:id});addLog('inf','-',`Cancelled: ${pendingQ[id]?.txt?.slice(0,50)||id}`);rmQ(id);}
+
+// ── Log ───────────────────────────────────────
+function addLog(type, icon, text) {
+  document.getElementById('log-empty')?.remove();
+  const list=document.getElementById('log-list');
+  const el=document.createElement('div'); el.className=`le ${type}`;
+  const ts=new Date().toTimeString().slice(0,8);
+  el.innerHTML=`<span class="le-icon">${icon}</span><div class="le-body"><div class="le-text">${esc(text)}</div><div class="le-time">${ts}</div></div>`;
+  list.prepend(el);
+  const all=list.querySelectorAll('.le');
+  if(all.length>200) all[all.length-1].remove();
+}
+function clearLog(){document.getElementById('log-list').innerHTML='<div class="log-empty" id="log-empty">no activity yet</div>';}
+function exportLog(){fetch('http://127.0.0.1:8765/export-log').then(r=>r.blob()).then(blob=>{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`soul_log_${new Date().toISOString().slice(0,10)}.md`;a.click();URL.revokeObjectURL(url);addLog('ok','+','Chat log exported');}).catch(e=>addLog('err','x',`Export failed: ${e.message}`));}
+
+// ── Tier + screen ─────────────────────────────
+function setTier(t){tier=t;['min','std','full'].forEach(k=>document.getElementById(`t-${k}`).classList.remove('on'));document.getElementById({minimal:'t-min',standard:'t-std',full:'t-full'}[t]).classList.add('on');window.pacify?.sendToMain({type:'set_permission_tier',tier:t});addLog('inf','*',`Mode: ${t}`);}
+function toggleScreen(){const el=document.getElementById('screen-toggle');const on=!el.classList.contains('on');el.className='toggle'+(on?' on':'');window.pacify?.sendToMain({type:'toggle_screen',enabled:on});}
+
+// ── Stats ─────────────────────────────────────
+function updateStats(s){if(!s)return;document.getElementById('bcpu').textContent=s.cpu!=null?`${Math.round(s.cpu)}%`:'--';document.getElementById('bram').textContent=s.ram!=null?`${Math.round(s.ram)}%`:'--';document.getElementById('bbat').textContent=s.battery||'--';document.getElementById('bnet').textContent=s.net_recv||'--';}
+
+// ── Utils ─────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Last user message for planner trigger ────
+let lastUserMsg = '';
+
+// ── Event handler ─────────────────────────────
+function handle(msg) {
+  setConn(true);
+  switch(msg.type) {
+    case 'user_message':
+      lastUserMsg = msg.text || '';
+      addToFeed('user', msg.text);
+      setPill('active');
+      addLog('inf','>',msg.text.slice(0,60));
+      break;
+
+    case 'thinking':
+      if(msg.active){showThinking();setPill('thinking');}
+      else{hideThinking();setPill('active');}
+      break;
+
+    case 'assistant_message':
+      hideThinking();
+      addToFeed('soul', msg.text);
+      setPill('idle');
+      addLog('inf','<',(msg.text||'').slice(0,70));
+      break;
+
+    case 'action_step': {
+      // Initialize plan on first step
+      if (msg.step === 1 && msg.total > 1) {
+        startPlan(lastUserMsg || 'Task');
+        // Switch to planner for multi-step
+        showTab('planner');
+      } else if (!activePlan) {
+        startPlan(lastUserMsg || 'Task');
+      }
+      if (activePlan) {
+        // Mark previous step done
+        activePlan.steps.forEach(s => { if(s.status==='running') s.status='done'; });
+        // Add current step
+        const existing = activePlan.steps.find(s=>s.index===msg.step);
+        if (existing) { existing.status='running'; }
+        else {
+          // Add any pending placeholders
+          for (let i=activePlan.steps.length+1; i<msg.step; i++) {
+            activePlan.steps.push({index:i, text:`Step ${i}`, status:'pending'});
+          }
+          activePlan.steps.push({index:msg.step, text:msg.display_text, status:'running'});
+        }
+        renderPlan(activePlan);
+        updatePlanBadge();
+      }
+      if(msg.total>1) addToFeed('soul',`Step ${msg.step}/${msg.total}: ${msg.display_text}`,'step');
+      addLog('act','~',`Step ${msg.step}/${msg.total}: ${msg.display_text}`);
+      break;
+    }
+
+    case 'action_pending':
+      // Single action (no step events) — create single-step plan
+      if (!activePlan) startPlan(lastUserMsg || msg.display_text);
+      if (activePlan) {
+        activePlan.steps.push({index:1, text:msg.display_text, status:'running'});
+        renderPlan(activePlan);
+      }
+      addLog('act','!',msg.display_text);
+      addQCard(msg.action_id, msg.display_text);
+      setPill('active');
+      break;
+
+    case 'action_result': {
+      const r=msg.result||{};
+      const isLast=!msg.total||msg.step===msg.total;
+      // Update last running step
+      if (activePlan) {
+        const running = activePlan.steps.find(s=>s.status==='running');
+        if (running) {
+          running.status = r.success||r.auto ? 'done' : (r.cancelled ? 'pending' : 'failed');
+          running.result = r.message || r.error || '';
+        }
+        if (isLast) {
+          renderPlan(activePlan);
+          activePlan = null;
+          updatePlanBadge();
+        } else {
+          renderPlan(activePlan);
+        }
+      }
+      if(r.auto)          addLog('auto','*',`Auto: ${r.message||'Done'}`);
+      else if(r.success)  addLog('ok',  '+',r.message||'Done');
+      else if(r.cancelled)addLog('inf', '-','Cancelled');
+      else                addLog('err', 'x',r.error||r.message||'Failed');
+      if(isLast) setPill('idle');
+      break;
+    }
+
+    case 'system_stats':
+      setConn(true);
+      updateStats(msg.stats);
+      if (msg.thumbnail) updateThumb(msg.thumbnail);
+      break;
+  }
+}
+
+window.pacify?.onWorkspaceEvent?.(handle);
+function openLink(url) {
+  window.pacify?.sendToMain({ type: 'open_external', url });
+}
+window.pacify?.getConfig?.().then(c=>{
+  if(c?.entity?.permission_tier) setTier(c.entity.permission_tier);
+}).catch(()=>{});
+
+addLog('inf','o','Ready');
+</script>
+</body>
+</html>
