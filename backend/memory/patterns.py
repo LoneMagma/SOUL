@@ -12,7 +12,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 
-DB_PATH = Path(__file__).parent.parent.parent / "soul_memory.db"
+def _resolve_db_path() -> Path:
+    import os as _os
+    data_dir = _os.environ.get("SOUL_DATA_DIR", "").strip()
+    if data_dir:
+        p = Path(data_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        return p / "soul_memory.db"
+    return Path(__file__).parent.parent.parent / "soul_memory.db"
+
+DB_PATH = _resolve_db_path()
 
 
 def get_db() -> sqlite3.Connection:

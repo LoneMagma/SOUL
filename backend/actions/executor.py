@@ -133,9 +133,112 @@ APP_ALIASES = {
     "league of legends":    "league",
     "lol":                  "league",
     "msi afterburner":      "msi afterburner",
-    "afterburner":          "msi afterburner",
-    "msi":                  "msi afterburner",
+    "afterburner":          "MSIAfterburner",
+    "msi afterburner":      "MSIAfterburner",
+    "msi":                  "MSIAfterburner",
+    # Taskbar / system
+    "taskbar":              "taskmgr.exe",
+    "task bar":             "taskmgr.exe",
+    "taskmgr":              "taskmgr.exe",
+    "file manager":         "explorer.exe",
+    "filemanager":          "explorer.exe",
+    "my computer":          "explorer.exe",
+    "this pc":              "explorer.exe",
+    # Browsers
+    "browser":              "msedge",
+    "brave":                "brave",
+    # Gaming
+    "riot":                 "RiotClientServices",
+    "riot client":          "RiotClientServices",
+    "valorant":             "VALORANT-Win64-Shipping",
+    "league":               "LeagueClient",
+    "league of legends":    "LeagueClient",
+    "epic games":           "EpicGamesLauncher",
+    "epic":                 "EpicGamesLauncher",
+    "gta":                  "PlayGTAV",
+    # Productivity / misc
+    "cursor":               "cursor",
+    "winrar":               "winrar",
+    "7zip":                 "7zFM",
+    "7-zip":                "7zFM",
+    "ccleaner":             "CCleaner64",
+    "everything":           "Everything",
+    "process explorer":     "procexp64",
+    "hwinfo":               "HWiNFO64",
+    "cpu-z":                "cpuz",
+    "gpu-z":                "GPU-Z",
 }
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# SOUL WORKDESK — Virtual Desktop scaffold (Windows 10/11)
+# SOUL operates on her own virtual desktop so actions don't disrupt user work.
+# Falls back silently on non-Windows or if VirtualDesktop helper not found.
+# ──────────────────────────────────────────────────────────────────────────
+
+_workdesk_index: int = -1
+_WORKDESK_NAME  = "SOUL Workdesk"
+
+
+def _workdesk_available() -> bool:
+    """True if the community VirtualDesktop.exe helper is on PATH."""
+    if not WINDOWS:
+        return False
+    try:
+        r = subprocess.run(["where", "VirtualDesktop.exe"],
+                           capture_output=True, text=True, timeout=3)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
+def init_workdesk() -> int:
+    """
+    Create (or find) SOUL's virtual desktop.
+    Returns the 0-based desktop index, or -1 if unavailable.
+    Idempotent — safe to call multiple times.
+    """
+    global _workdesk_index
+    if _workdesk_index >= 0:
+        return _workdesk_index
+    if not _workdesk_available():
+        return -1
+    try:
+        r = subprocess.run(["VirtualDesktop.exe", "/list"],
+                           capture_output=True, text=True, timeout=5)
+        lines = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+        for i, line in enumerate(lines):
+            if _WORKDESK_NAME.lower() in line.lower():
+                _workdesk_index = i
+                print(f"[SOUL] Workdesk found at index {i}")
+                return _workdesk_index
+        # Not found — create
+        subprocess.run(["VirtualDesktop.exe", f"/new:{_WORKDESK_NAME}"],
+                       capture_output=True, timeout=5)
+        r2 = subprocess.run(["VirtualDesktop.exe", "/list"],
+                            capture_output=True, text=True, timeout=5)
+        lines2 = [l.strip() for l in r2.stdout.splitlines() if l.strip()]
+        for i, line in enumerate(lines2):
+            if _WORKDESK_NAME.lower() in line.lower():
+                _workdesk_index = i
+                print(f"[SOUL] Workdesk created at index {i}")
+                return _workdesk_index
+    except Exception as e:
+        print(f"[SOUL] Workdesk init failed: {e}")
+    return -1
+
+
+def _move_to_workdesk(pid: int) -> bool:
+    """Move a process's main window to SOUL Workdesk."""
+    if _workdesk_index < 0:
+        return False
+    try:
+        subprocess.run(["VirtualDesktop.exe", f"/process:{pid}",
+                        f"/move:{_workdesk_index}"],
+                       capture_output=True, timeout=4)
+        return True
+    except Exception:
+        return False
 
 
 # ── Actions ───────────────────────────────────────────────────────────────
@@ -152,6 +255,52 @@ async def _open_app(p: dict) -> str:
     key      = app.lower().strip()
     resolved = APP_ALIASES.get(key, app)
     print(f"[SOUL] open_app: '{app}' -> '{resolved}'")
+
+    # ── Check if already running — avoid spawning duplicate instances ─────────
+    # Single-instance apps (Notepad, Spotify, etc.) should be focused, not re-spawned.
+    _SINGLE_INSTANCE = {
+        "notepad", "notepad.exe", "spotify", "discord", "discord.exe",
+        "taskmgr", "taskmgr.exe", "task manager",
+    }
+    if WINDOWS and (key in _SINGLE_INSTANCE or resolved.lower().rstrip('.exe') in _SINGLE_INSTANCE):
+        import psutil as _psu
+        _exe_stem = resolved.lower().replace('.exe', '')
+        for _proc in _psu.process_iter(['name', 'status']):
+            try:
+                if _proc.info['name'] and _proc.info['name'].lower().replace('.exe','') == _exe_stem:
+                    # Already running — try focus instead
+                    _focus_ps = f"""
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class BringFwd {{ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n); }}
+"@
+$p = Get-Process -Id {_proc.pid} -ErrorAction SilentlyContinue
+if ($p -and $p.MainWindowHandle -ne 0) {{ [BringFwd]::ShowWindow($p.MainWindowHandle, 9) | Out-Null; [BringFwd]::SetForegroundWindow($p.MainWindowHandle) | Out-Null }}
+"""
+                    subprocess.run(["powershell", "-NoProfile", "-WindowStyle", "Hidden",
+                                    "-Command", _focus_ps], capture_output=True, timeout=5)
+                    return f"{app} already open — brought to front"
+            except Exception:
+                pass
+
+    # ── taskmgr special case: launch elevated via PowerShell ─────────────────
+    if WINDOWS and resolved.lower() in ("taskmgr.exe", "taskmgr"):
+        subprocess.Popen(
+            ["powershell", "-NoProfile", "-WindowStyle", "Hidden",
+             "-Command", "Start-Process taskmgr.exe -Verb RunAs"],
+            capture_output=True
+        )
+        await asyncio.sleep(0.6)
+        return "Opening Task Manager (elevated)"
+
+    # 0. os.startfile — most reliable on Windows (uses ShellExecute directly)
+    if WINDOWS:
+        try:
+            os.startfile(resolved)
+            await asyncio.sleep(0.8)
+            return f"Opened {app}"
+        except Exception:
+            pass  # fall through to other methods
 
     # 1. URI scheme (ms-settings:, spotify:, etc.)
     if ":" in resolved and not resolved.endswith(".exe"):
@@ -259,6 +408,7 @@ async def _open_app(p: dict) -> str:
 
     # 6. cmd start as last resort
     subprocess.Popen(f'start "" "{resolved}"', shell=True)
+    await asyncio.sleep(0.8)
     return f"Opened {app} (via start)"
 
 
@@ -390,6 +540,9 @@ async def _delete_file(p: dict) -> str:
 async def _create_file(p: dict) -> str:
     path    = _resolve_path(p.get("path", ""))
     content = p.get("content", "")
+    # Always ensure SOUL folder exists
+    _soul = Path.home() / "Documents" / "SOUL"
+    _soul.mkdir(parents=True, exist_ok=True)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     if WINDOWS:
@@ -566,27 +719,37 @@ async def _play_media(p: dict) -> str:
     # Spotify liked songs — open collection then focus window and press play
     if path in ("spotify:user:collection", "spotify:collection",
                 "spotify://collection", "liked", "liked songs"):
-        webbrowser.open("spotify://collection/tracks")
         import asyncio as _asyncio
-        await _asyncio.sleep(3.0)
         if WINDOWS:
-            # Focus Spotify window, then press Space to start playback
+            # Launch liked songs URI and immediately queue a playback keypress
             ps = r"""
+Start-Process "spotify://collection/tracks"
+Start-Sleep -Seconds 2
+Add-Type -AssemblyName Microsoft.VisualBasic
 Add-Type @"
 using System; using System.Runtime.InteropServices;
-public class W { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-                 [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n); }
-"@
-$proc = Get-Process | Where-Object { $_.Name -like 'Spotify' -and $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-if ($proc) {
-    [W]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null
-    [W]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
-    Start-Sleep -Milliseconds 700
+public class FW {
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
 }
-Add-Type -AssemblyName System.Windows.Forms
-[System.Windows.Forms.SendKeys]::SendWait(' ')
+"@
+$procs = @(Get-Process -Name Spotify -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 })
+if ($procs.Count -gt 0) {
+    $h = $procs[0].MainWindowHandle
+    [FW]::ShowWindow($h, 9) | Out-Null
+    [FW]::SetForegroundWindow($h) | Out-Null
+    Start-Sleep -Milliseconds 800
+    $wsh = New-Object -ComObject WScript.Shell
+    $wsh.SendKeys(' ')
+    Start-Sleep -Milliseconds 400
+    $wsh.SendKeys(' ')
+}
 """
-            subprocess.run(["powershell", "-Command", ps], capture_output=True, timeout=10)
+            subprocess.run(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                           capture_output=True, timeout=15)
+        else:
+            webbrowser.open("spotify://collection/tracks")
+            await _asyncio.sleep(3.0)
         return "Playing Spotify Liked Songs"
     # Other Spotify / media URI scheme
     if path.startswith("spotify:") or path.startswith("http"):
@@ -676,29 +839,52 @@ async def _type_text(p: dict) -> str:
         # Use clipboard-paste approach: works with ALL apps including Win11 Notepad.
         # SendKeys is unreliable for long text in modern Windows apps.
         # Strategy: Set-Clipboard + focus window + Ctrl+V
-        import json as _json
+
+        # ── SOUL window exclusion guard ────────────────────────────────────────
+        # Never type into SOUL's own chat input. If window_title is empty/None,
+        # we must NOT fall back to "whatever has focus" because that is usually
+        # SOUL's chat bar. Require an explicit target for blind paste.
+        _SOUL_TITLES = {"soul", "thinkiee", "soul — device companion", "electron"}
+        if not window_title:
+            return ("type_text requires a window_title — no target specified. "
+                    "Please open the app first and retry with window_title set.")
+        if window_title.lower().strip() in _SOUL_TITLES:
+            return "Refused: will not type into SOUL's own window."
 
         # Safely encode text for PowerShell here-string
         text_escaped = text.replace("'", "''")   # escape single quotes for PS
 
         if window_title:
+            # Retry up to 5 times to find and focus the window before pasting.
+            # This handles apps that are still loading when focus is attempted.
             ps = f"""
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public class WinPaste {{
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 }}
 "@
-$proc = Get-Process | Where-Object {{ $_.MainWindowTitle -like '*{window_title}*' -and $_.MainWindowHandle -ne 0 }} | Select-Object -First 1
-if ($proc) {{
-    [WinPaste]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null
-    [WinPaste]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
-    Start-Sleep -Milliseconds 700
+$ok = $false
+for ($i = 0; $i -lt 5; $i++) {{
+    $proc = Get-Process | Where-Object {{ $_.MainWindowTitle -like '*{window_title}*' -and $_.MainWindowHandle -ne 0 }} | Select-Object -First 1
+    if ($proc) {{
+        [WinPaste]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null
+        [WinPaste]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+        Start-Sleep -Milliseconds 500
+        if ([WinPaste]::GetForegroundWindow() -eq $proc.MainWindowHandle) {{ $ok = $true; break }}
+    }}
+    Start-Sleep -Milliseconds 500
 }}
-Set-Clipboard -Value '{text_escaped}'
-Add-Type -AssemblyName System.Windows.Forms
-[System.Windows.Forms.SendKeys]::SendWait("^v")
+if ($ok) {{
+    Set-Clipboard -Value '{text_escaped}'
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.SendKeys]::SendWait("^v")
+    Write-Output "ok"
+}} else {{
+    Write-Output "not_found"
+}}
 """
         else:
             ps = f"""
@@ -707,7 +893,10 @@ Set-Clipboard -Value '{text_escaped}'
 Add-Type -AssemblyName System.Windows.Forms
 [System.Windows.Forms.SendKeys]::SendWait("^v")
 """
-        subprocess.run(["powershell", "-Command", ps], capture_output=True, timeout=15)
+        r = subprocess.run(["powershell", "-Command", ps], capture_output=True,
+                            text=True, timeout=22)
+        if window_title and "not_found" in (r.stdout or ""):
+            return f"Window '{window_title}' not found — text not typed"
         return f"Typed {len(text)} chars into {window_title or 'focused window'}"
     return "Type not supported on this OS"
 

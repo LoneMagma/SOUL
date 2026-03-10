@@ -1,21 +1,13 @@
 
-# ── SOUL patch v2: live screen-capture flag ───────────────────
-def _sc_enabled(cfg) -> bool:
-    """Always read screen_capture_enabled from live config, not startup cache."""
-    try:
-        if hasattr(cfg, "get_live"):
-            return bool(cfg.get_live("screen_capture_enabled"))
-        if hasattr(cfg, "data"):
-            return bool(cfg.data.get("screen_capture_enabled", False))
-        if isinstance(cfg, dict):
-            return bool(cfg.get("screen_capture_enabled", False))
-    except Exception:
-        pass
-    return False
 
 """
-SOUL — Main Server
-Proactive wake on connect, full context pipeline, screen toggle, notification broadcast.
+SOUL — Main Server  v1.7
+Adds: closed action loop via ActionVerifier (verifier.py)
+  - pre_capture() before every action fires
+  - post_capture + screen compare after every verifiable action
+  - one automatic fallback attempt on visual failure
+  - inject_visual_result() replaces raw inject_action_result() for exec actions
+  - /reset endpoint: wipes config + memory DB, returns to onboarding
 """
 
 import asyncio
@@ -28,16 +20,18 @@ from typing import Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from perception.observer import VisionObserver
 sys.path.insert(0, os.path.dirname(__file__))
+from perception.observer import VisionObserver
 
 from config import load_config, save_config, is_first_run, DEFAULT_CONFIG
 from groq_client import GroqClient
+import time
 import time
 from perception.system import ScreenWatcher, SystemMonitor
 from perception.observer import VisionObserver
 from actions.executor import ActionExecutor, PendingAction
 from memory.patterns import PatternEngine, format_memory_for_llm, save_exchange, scrub_stale_names
+from verifier import ActionVerifier, VERIFIABLE
 
 
 class SOULState:
@@ -51,20 +45,18 @@ class SOULState:
         self.executor = ActionExecutor(on_pending=self._on_pending, get_tier=lambda: self.permission_tier)
         self.screen_watcher: Optional[ScreenWatcher] = None
         self.observer: Optional[VisionObserver] = None
+        self.verifier: Optional[ActionVerifier] = None   # set in lifespan after screen_watcher
         self._last_user_msg_time: float = time.time()
         self.voice_listener = None
         self.ws_clients: list[WebSocket] = []
         self.entity_name = self.config["entity"]["name"]
         self.screen_enabled = self.config["perception"].get("vision_enabled", True)
-        self.permission_tier = self.config["entity"].get("permission_tier", "standard")
+        self.permission_tier  = self.config["entity"].get("permission_tier", "standard")
+        self._has_woken       = False
+        self._last_wake_time  = 0.0
 
-        # Scrub stale names from previous sessions before loading memory
-        # Any name that's no longer the configured user_name gets purged
-        _current_user = self.config["entity"].get("user_name", "")
-        _stale_names = [n for n in ["Aryan", "aryan"] if n.lower() != _current_user.lower()]
-        if _stale_names:
-            scrub_stale_names(_stale_names)
-            print(f"[SOUL] Scrubbed stale names from memory: {_stale_names}")
+        # Name scrub removed in v1.6 -- no hardcoded names in distribution builds.
+        # scrub_stale_names() remains available for a future Settings rename flow.
 
         # Inject persistent memory into LLM on boot
         memory = format_memory_for_llm(limit=8)
@@ -90,7 +82,6 @@ class SOULState:
             except Exception:
                 dead.append(ws)
         for d in dead:
-            self.ws_clients.discard(d) if hasattr(self.ws_clients, 'discard') else None
             if d in self.ws_clients:
                 self.ws_clients.remove(d)
 
@@ -166,13 +157,18 @@ class SOULState:
                 await asyncio.sleep(0.3)
                 asyncio.create_task(self.screen_watcher.start())
 
+        _cap_err = ""
+        if self.screen_watcher and self.screen_enabled:
+            _cap_err = getattr(self.screen_watcher, "capture_error", "")
+
         context = self.groq.build_context(
             stats=stats,
             screen_summary=screen_summary,
             screen_enabled=self.screen_enabled,
             active_task=active_task,
             pattern_triggers=[trigger["display_text"]] if trigger else [],
-            screen_summary_age=screen_summary_age
+            screen_summary_age=screen_summary_age,
+            capture_error=_cap_err,
         )
 
         # ── Streaming response ─────────────────────────────────────────────
@@ -225,11 +221,25 @@ class SOULState:
             # App weight tables for smarter timing
             _HEAVY = {"chrome","firefox","edge","code","discord","steam","spotify",
                       "obs","photoshop","premiere","blender","slack","teams","zoom"}
+            _UWP   = {"calculator","store","photos","mail","calendar","maps",
+                       "notepad","snipping tool","xbox","settings","terminal"}
             _LIGHT = {"paint","wordpad","cmd","powershell","terminal"}
             # Result threading: previous step's output available as {prev} / {clipboard} in params
             _ctx: dict           = {}
             _last_focus_ok:   bool = True   # assume focus until proven otherwise
             _last_focus_title: str = ""
+
+            # ── executor_fn: callable for verifier fallbacks ──────────────────
+            async def _execute_for_verifier(a: dict) -> dict:
+                """Simple one-shot executor call used by ActionVerifier for fallbacks."""
+                try:
+                    return await self.executor.request(
+                        action_type  = a["type"],
+                        params       = a.get("params", {}),
+                        display_text = a.get("display_text", ""),
+                    )
+                except Exception as _e:
+                    return {"success": False, "message": str(_e)}
 
             for idx, action in enumerate(actions, 1):
                 atype        = action.get("type", "")
@@ -269,8 +279,16 @@ class SOULState:
                         gap = 0.6
                     await asyncio.sleep(gap)
 
-                # focus_window: retry up to 3 times with backoff (window may not be ready)
+                # ── PRE-CAPTURE: snapshot screen before action fires ──────────
+                # Verifier needs to know what the screen looked like before.
+                # We do this for all verifiable actions regardless of type.
+                if self.verifier and atype in VERIFIABLE:
+                    await self.verifier.pre_capture()
+
+                # ── EXECUTE ACTION ────────────────────────────────────────────
+
                 if atype == "focus_window":
+                    # focus_window: retry up to 3× with backoff (window may not be ready)
                     result = None
                     for _attempt in range(3):
                         try:
@@ -293,12 +311,10 @@ class SOULState:
 
                 elif atype == "type_text":
                     # SAFETY: type_text can only reach the target window if focus succeeded.
-                    # If the preceding focus_window failed (or was never attempted), the keyboard
-                    # focus is likely on SOUL's own input field — typing would inject text into
-                    # the chat and auto-submit it as a fake user message.
+                    # If focus failed, we'd type into SOUL's own input field — that auto-submits
+                    # the text as a fake user message. Re-attempt focus first if needed.
                     target_title = params.get("window_title", "").lower()
                     if target_title and not _last_focus_ok:
-                        # Re-attempt focus before typing
                         _refocus = await self.executor.request(
                             action_type="focus_window",
                             params={"title": target_title},
@@ -309,7 +325,6 @@ class SOULState:
                             _last_focus_title = target_title
                             await asyncio.sleep(0.8)
                         else:
-                            # Give up — don't type blindly into SOUL's input
                             result = {"success": False,
                                       "message": f"Skipped type_text: window '{target_title}' not in focus"}
                             await self.broadcast({
@@ -337,10 +352,47 @@ class SOULState:
                     except Exception as _ex:
                         result = {"success": False, "message": str(_ex)}
 
+                # ── POST-EXECUTE: closed loop verification ────────────────────
+                # For verifiable actions: check screen, attempt one fallback if failed,
+                # then inject visually-grounded result into LLM history.
+                # For unverifiable actions: inject raw executor result as before.
+
+                _used_visual_inject = False
+
+                if self.verifier and self.screen_enabled and atype in VERIFIABLE:
+                    final_ok, vr = await self.verifier.verify_and_fallback(
+                        action      = {**action, "params": params},
+                        executor_ok = result.get("success", False),
+                        execute_fn  = _execute_for_verifier,
+                    )
+
+                    # If verifier ran a fallback that succeeded, update result so
+                    # downstream code (focus tracking, chain-stop) sees the real outcome
+                    if final_ok and not result.get("success"):
+                        result["success"] = True
+                        result["message"] = vr.delta or "succeeded via fallback"
+
+                    # Broadcast visual confirmation info to frontend
+                    if vr.visual_confirmed:
+                        await self.broadcast({
+                            "type":   "action_verified",
+                            "step":   idx,
+                            "delta":  vr.delta,
+                            "fallback_used": vr.fallback_used is not None,
+                        })
+
+                    # Update focus-tracking if focus_window succeeded via fallback
+                    if atype == "focus_window" and final_ok:
+                        _last_focus_ok    = True
+                        _last_focus_title = params.get("title", "").lower()
+                    elif atype == "focus_window" and not final_ok:
+                        _last_focus_ok = False
+
+                    # Inject visually-grounded result into LLM history
+                    self.groq.inject_visual_result({**action, "params": params}, result, vr)
+                    _used_visual_inject = True
+
                 # Thread result value into context for subsequent steps
-                # Enables: read_clipboard → {clipboard} in type_text.text
-                #          read_file      → {prev} in write_file.content
-                #          get_time       → {prev} in type_text.text
                 for _key in ("content", "value", "data", "text", "message"):
                     _val = result.get(_key)
                     if _val and isinstance(_val, str) and not _val.startswith("__"):
@@ -362,7 +414,6 @@ class SOULState:
                     if new_state:
                         if self.screen_watcher and not self.screen_watcher._running:
                             asyncio.create_task(self.screen_watcher.start())
-                        # Restart observer when screen comes back on
                         if self.screen_watcher and not self.observer:
                             self.observer = VisionObserver(
                                 groq_client         = self.groq,
@@ -372,14 +423,23 @@ class SOULState:
                                 broadcast           = self.broadcast,
                                 get_screen_enabled  = lambda: self.screen_enabled,
                                 save_exchange_fn    = save_exchange,
+                                get_current_context = lambda: next(
+                                    (m["content"] for m in reversed(self.groq.conversation_history)
+                                     if m.get("role") == "assistant"), ""
+                                ),
                             )
                             asyncio.create_task(self.observer.start())
+                        # Update verifier's screen reference
+                        if self.verifier and self.screen_watcher:
+                            self.verifier.screen = self.screen_watcher
                     else:
                         if self.screen_watcher:
                             self.screen_watcher.stop()
                         if self.observer:
                             self.observer.stop()
                             self.observer = None
+                        if self.verifier:
+                            self.verifier.screen = None
                     result["message"] = f"Screen capture {'enabled' if new_state else 'disabled'}"
                     result["success"] = True
                     await self.broadcast({"type": "screen_toggled", "enabled": new_state})
@@ -391,46 +451,37 @@ class SOULState:
                     "total": total
                 })
 
-                # ── Feed ALL action results back to LLM ─────────────────────
-                # Data actions: inject full content so she can answer follow-ups.
-                # Execution actions: inject success/failure so she stops assuming.
-                # This eliminates the "Notepad is open" / "it worked" hallucination.
-                _DATA_ACTIONS = {
-                    "get_running_processes", "get_system_info", "check_battery",
-                    "get_time", "read_file", "read_clipboard", "web_search",
-                }
-                _EXEC_ACTIONS = {
-                    "open_app", "close_app", "focus_window", "type_text",
-                    "press_keys", "play_media", "run_command", "kill_process",
-                    "create_file", "write_file", "open_folder", "open_url",
-                    "lock_screen", "set_volume", "take_screenshot",
-                    "rename_file", "delete_file", "copy_to_clipboard",
-                }
+                # ── Inject into LLM history (non-visual path) ─────────────────
+                # Visual injection already done above for verifiable actions.
+                # This block handles data-read actions and unverifiable exec actions.
+                if not _used_visual_inject:
+                    _DATA_ACTIONS = {
+                        "get_running_processes", "get_system_info", "check_battery",
+                        "get_time", "read_file", "read_clipboard", "web_search",
+                    }
+                    _EXEC_ACTIONS = {
+                        "open_app", "close_app", "focus_window", "type_text",
+                        "press_keys", "play_media", "run_command", "kill_process",
+                        "create_file", "write_file", "open_folder", "open_url",
+                        "lock_screen", "set_volume", "take_screenshot",
+                        "rename_file", "delete_file", "copy_to_clipboard",
+                    }
 
-                if atype in _DATA_ACTIONS and result.get("success"):
-                    _result_text = (result.get("content")
-                                    or result.get("data")
-                                    or result.get("message")
-                                    or result.get("text", ""))
-                    if _result_text:
-                        self.groq.inject_action_result(atype, str(_result_text))
+                    if atype in _DATA_ACTIONS and result.get("success"):
+                        _result_text = (result.get("content")
+                                        or result.get("data")
+                                        or result.get("message")
+                                        or result.get("text", ""))
+                        if _result_text:
+                            self.groq.inject_action_result(atype, str(_result_text))
 
-                elif atype in _EXEC_ACTIONS:
-                    # Inject outcome so LLM knows what actually happened
-                    _ok   = result.get("success", False)
-                    _msg  = (result.get("message") or result.get("text") or
-                             result.get("content") or ("OK" if _ok else "Failed"))
-                    _label = action.get("display_text") or atype
-                    _inject_line = (
-                        f"[ACTION {'OK' if _ok else 'FAILED'}] {_label}: {_msg}"
-                    )
-                    self.groq.inject_action_result(atype, _inject_line)
-
-                # For auto multi-step: only broadcast text on final step
-                # (intermediate step results are visible in workspace, not chat)
-                if result.get("auto") and total > 1 and idx < total:
-                    # suppress intermediate step messages from chat — workspace shows them
-                    pass
+                    elif atype in _EXEC_ACTIONS:
+                        _ok   = result.get("success", False)
+                        _msg  = (result.get("message") or result.get("text") or
+                                 result.get("content") or ("OK" if _ok else "Failed"))
+                        _label = action.get("display_text") or atype
+                        self.groq.inject_action_result(
+                            atype, f"[ACTION {'OK' if _ok else 'FAILED'}] {_label}: {_msg}")
 
                 # Stop chain on failure (unless it's an info step)
                 if not result.get("success") and not result.get("auto") and total > 1:
@@ -453,6 +504,16 @@ async def lifespan(app: FastAPI):
     if state.config["perception"]["vision_enabled"]:
         state.screen_watcher = ScreenWatcher(state.groq, thumb_interval=2, vision_interval=6)
         asyncio.create_task(state.screen_watcher.start())
+
+    # ── Action Verifier — closed loop between eyes and hands ────────────────
+    # Created with whatever screen_watcher we have (may be None if vision off).
+    # The verifier degrades gracefully: if screen is None, all verifications
+    # skip visual check and trust executor return values directly.
+    state.verifier = ActionVerifier(
+        screen_watcher = state.screen_watcher,
+        groq_client    = state.groq,
+    )
+    print(f"[SOUL] Action verifier ready (vision={'on' if state.screen_watcher else 'off'})")
 
     # ── Vision Observer — eyes + proactive awareness loop ───────────────────
     if state.config["perception"]["vision_enabled"] and state.screen_watcher:
@@ -497,6 +558,54 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="SOUL", lifespan=lifespan)
+
+
+@app.post("/reset")
+async def reset_all():
+    """
+    Fresh slate: wipe config, memory DB, and in-memory state.
+    Electron reloads to onboarding.html after calling this.
+    """
+    from config import CONFIG_PATH
+    from pathlib import Path as _P
+    import os as _os
+
+    wiped  = []
+    errors = []
+
+    # 1. Delete config
+    try:
+        if CONFIG_PATH.exists():
+            CONFIG_PATH.unlink()
+            wiped.append("config")
+    except Exception as e:
+        errors.append(f"config: {e}")
+
+    # 2. Delete memory DB (+ SQLite WAL/SHM side files)
+    try:
+        cfg      = state.config
+        db_name  = cfg.get("memory", {}).get("db_path", "soul_memory.db")
+        data_dir = _os.environ.get("SOUL_DATA_DIR", "").strip()
+        db_path  = _P(data_dir) / db_name if data_dir else _P(__file__).parent.parent / db_name
+        for ext in ["", "-wal", "-shm"]:
+            p = _P(str(db_path) + ext) if ext else db_path
+            if p.exists():
+                p.unlink()
+        wiped.append("memory_db")
+    except Exception as e:
+        errors.append(f"memory_db: {e}")
+
+    # 3. Reset in-memory LLM state
+    state.groq.reset()
+    state.groq.conversation_history = []
+
+    # 4. Reset config to defaults (in-memory — file is already gone)
+    state.config      = DEFAULT_CONFIG.copy()
+    state.groq.config = state.config
+    state.entity_name = state.config["entity"]["name"]
+
+    print(f"[SOUL] Reset complete. Wiped: {wiped}. Errors: {errors}")
+    return {"success": True, "wiped": wiped, "errors": errors}
 
 
 @app.get("/export-log")
@@ -605,12 +714,37 @@ async def _handle(data: dict):
             else:
                 state.screen_watcher = ScreenWatcher(state.groq, thumb_interval=2, vision_interval=6)
                 asyncio.create_task(state.screen_watcher.start())
+            # Restart observer with full context wiring (Brain->Eyes link)
+            if state.screen_watcher and not state.observer:
+                state.observer = VisionObserver(
+                    groq_client         = state.groq,
+                    screen_watcher      = state.screen_watcher,
+                    get_last_user_time  = lambda: state._last_user_msg_time,
+                    get_ws_clients      = lambda: state.ws_clients,
+                    broadcast           = state.broadcast,
+                    get_screen_enabled  = lambda: state.screen_enabled,
+                    save_exchange_fn    = save_exchange,
+                    get_current_context = lambda: next(
+                        (m["content"] for m in reversed(state.groq.conversation_history)
+                         if m.get("role") == "assistant"), ""
+                    ),
+                )
+                asyncio.create_task(state.observer.start())
+            # Sync verifier with new screen_watcher
+            if state.verifier:
+                state.verifier.screen = state.screen_watcher
         else:
-            # Stop watcher immediately
+            # Stop watcher + observer immediately
             if state.screen_watcher:
                 state.screen_watcher.stop()
                 state.screen_watcher.thumbnail_b64 = ""
                 state.screen_watcher.summary = ""
+            if state.observer:
+                state.observer.stop()
+                state.observer = None
+            # Verifier degrades gracefully with screen=None
+            if state.verifier:
+                state.verifier.screen = None
         await state.broadcast({"type": "screen_toggled", "enabled": enabled})
     elif t == "clear_history":
         state.groq.reset()

@@ -4,18 +4,22 @@
 <meta charset="UTF-8">
 <title>SOUL — Setup</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap');
 
 :root {
-  --bg: #07090e;
-  --surface: rgba(255,255,255,0.036);
-  --border: rgba(255,255,255,0.07);
-  --accent: #8b7cf8;
-  --accent-soft: rgba(139,124,248,0.1);
-  --text: #ddd8f3;
-  --text-dim: rgba(221,216,243,0.38);
+  --bg:    #07090e;
+  --s1:    rgba(255,255,255,.038);
+  --s2:    rgba(255,255,255,.062);
+  --b1:    rgba(255,255,255,.07);
+  --b2:    rgba(255,255,255,.12);
+  --acc:   #8b7cf8;
+  --as:    rgba(139,124,248,.12);
+  --ab:    rgba(139,124,248,.32);
+  --text:  #ddd8f3;
+  --dim:   rgba(221,216,243,.42);
+  --dim2:  rgba(221,216,243,.62);
   --green: #4de89c;
-  --glow: rgba(139,124,248,0.26);
+  --glow:  rgba(139,124,248,.30);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -29,587 +33,635 @@ html, body {
   -webkit-app-region: no-drag;
 }
 
+/* ── Screen system ── */
 .screen {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
 }
-.screen.active {
-  opacity: 1;
-  pointer-events: all;
+.screen.active { opacity: 1; pointer-events: all; }
+
+/* ── Progress bar (top) ── */
+.prog-bar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--b1); z-index: 10;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--acc), #60a5fa);
+  border-radius: 2px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── SIGNAL MARK ── */
-.signal-wrap {
-  position: relative;
-  width: 56px; height: 56px;
-  display: flex; align-items: center; justify-content: center;
+/* ── Shared components ── */
+.screen-inner { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+.screen-scroll { flex:1; overflow-y:auto; padding:28px 26px 0; }
+.screen-scroll::-webkit-scrollbar { width:0; }
+.screen-footer {
+  padding: 16px 26px 22px;
+  border-top: 1px solid var(--b1);
   flex-shrink: 0;
+}
+
+/* ── Signal mark ── */
+.signal {
+  position:relative; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
 }
 .s-arc { position:absolute; border-radius:50%; border:1px solid transparent; }
-.s-a1 { width:56px; height:56px; border-top-color:rgba(139,124,248,.65); border-right-color:rgba(139,124,248,.1); border-left-color:rgba(139,124,248,.1); animation:spin 8s linear infinite; }
-.s-a2 { width:38px; height:38px; border-right-color:rgba(139,124,248,.45); border-bottom-color:rgba(139,124,248,.07); animation:spin 5s linear infinite reverse; }
-.s-a3 { width:22px; height:22px; border-top-color:rgba(139,124,248,.28); border-bottom-color:rgba(139,124,248,.28); animation:spin 3s linear infinite; }
-.s-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--glow); animation:dp 3s ease-in-out infinite; position:relative; z-index:2; }
+.s-a1 { border-top-color:rgba(139,124,248,.7); border-right-color:rgba(139,124,248,.1); border-left-color:rgba(139,124,248,.1); animation:spin 9s linear infinite; }
+.s-a2 { border-right-color:rgba(139,124,248,.5); border-bottom-color:rgba(139,124,248,.07); animation:spin 6s linear infinite reverse; }
+.s-a3 { border-top-color:rgba(139,124,248,.3); border-bottom-color:rgba(139,124,248,.3); animation:spin 3.5s linear infinite; }
+.s-dot { border-radius:50%; background:var(--acc); box-shadow:0 0 10px var(--glow); animation:dp 3s ease-in-out infinite; position:relative; z-index:2; }
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-@keyframes dp { 0%,100%{transform:scale(1)} 50%{transform:scale(1.7);box-shadow:0 0 18px var(--glow)} }
+@keyframes dp   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6);box-shadow:0 0 18px var(--glow)} }
 
-/* ── SCREEN 1 — CHAT INTRO ── */
-#s1 { padding: 0; }
-
+/* ── Chat bubbles (screen 1) ── */
 .chat-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 32px 28px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex:1; overflow-y:auto; padding:28px 22px 14px;
+  display:flex; flex-direction:column; gap:14px;
 }
-.chat-area::-webkit-scrollbar { width: 0; }
-
-.msg-soul {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  animation: msg-in .3s ease;
+.chat-area::-webkit-scrollbar { width:0; }
+.msg-soul { display:flex; gap:10px; align-items:flex-start; animation:msg-in .28s ease; }
+.msg-soul .bub {
+  background:var(--s1); border:1px solid var(--b1);
+  border-radius:14px 14px 14px 3px;
+  padding:10px 13px; font-size:13px; line-height:1.65;
+  color:var(--text); max-width:270px;
 }
-.msg-soul .avatar { flex-shrink: 0; margin-top: 2px; }
-.msg-soul .bubble {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px 14px 14px 3px;
-  padding: 11px 14px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text);
-  max-width: 280px;
+.msg-user { display:flex; justify-content:flex-end; animation:msg-in .28s ease; }
+.msg-user .bub {
+  background:var(--as); border:1px solid var(--ab);
+  border-radius:14px 14px 3px 14px;
+  padding:10px 13px; font-size:13px; line-height:1.65;
+  color:var(--text); max-width:270px;
 }
-
-.msg-user {
-  display: flex;
-  justify-content: flex-end;
-  animation: msg-in .3s ease;
-}
-.msg-user .bubble {
-  background: var(--accent-soft);
-  border: 1px solid rgba(139,124,248,.2);
-  border-radius: 14px 14px 3px 14px;
-  padding: 11px 14px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text);
-  max-width: 280px;
-}
-
-@keyframes msg-in {
-  from { opacity:0; transform:translateY(6px); }
-  to   { opacity:1; transform:none; }
-}
-
-/* Typing indicator */
-.typing {
-  display: flex; gap: 12px; align-items: center;
-  animation: msg-in .3s ease;
-}
-.typing-dots { display:flex; gap:4px; padding:13px 14px; background:var(--surface); border:1px solid var(--border); border-radius:14px 14px 14px 3px; }
-.td { width:4px; height:4px; border-radius:50%; background:var(--accent); opacity:.4; animation:tdb 1s ease-in-out infinite; }
+@keyframes msg-in { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+.typing { display:flex; gap:10px; align-items:center; animation:msg-in .28s ease; }
+.typing-dots { display:flex; gap:4px; padding:12px 14px; background:var(--s1); border:1px solid var(--b1); border-radius:14px 14px 14px 3px; }
+.td { width:4px; height:4px; border-radius:50%; background:var(--acc); opacity:.4; animation:tdb 1s ease-in-out infinite; }
 .td:nth-child(2){animation-delay:.16s} .td:nth-child(3){animation-delay:.32s}
 @keyframes tdb { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-4px);opacity:1} }
-
-/* Input row */
-.input-row {
-  padding: 14px 20px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+.opts-wrap { padding:0 22px 14px; display:flex; flex-wrap:wrap; gap:7px; }
+.opt {
+  padding:7px 14px; border-radius:20px;
+  background:var(--s1); border:1px solid var(--b1);
+  color:var(--dim2); font-family:'Syne',sans-serif; font-size:11px;
+  cursor:pointer; transition:all .14s;
+}
+.opt:hover { border-color:var(--ab); color:var(--text); background:var(--as); }
+.inp-row {
+  padding:12px 18px; display:flex; gap:8px;
+  align-items:center; border-top:1px solid var(--b1); flex-shrink:0;
 }
 .chat-inp {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 13px;
-  color: var(--text);
-  font-family: 'Syne', sans-serif;
-  font-size: 13px;
-  outline: none;
-  transition: border-color .15s;
+  flex:1; background:var(--s1); border:1px solid var(--b1);
+  border-radius:10px; padding:10px 12px; color:var(--text);
+  font-family:'Syne',sans-serif; font-size:13px; outline:none;
+  transition:border-color .15s;
 }
-.chat-inp:focus { border-color: rgba(139,124,248,.42); }
-.chat-inp::placeholder { color: var(--text-dim); }
-.chat-inp:disabled { opacity: .4; }
-
+.chat-inp:focus { border-color:var(--ab); }
+.chat-inp::placeholder { color:var(--dim); }
+.chat-inp:disabled { opacity:.38; }
 .btn-send {
-  width: 34px; height: 34px;
-  border-radius: 9px; border: none;
-  background: var(--accent);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity .15s, transform .1s;
-  flex-shrink: 0;
+  width:34px; height:34px; border-radius:9px; border:none;
+  background:var(--acc); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity .15s,transform .1s; flex-shrink:0;
 }
-.btn-send:hover { opacity: .82; }
-.btn-send:active { transform: scale(.93); }
-.btn-send:disabled { opacity: .3; cursor: default; }
+.btn-send:hover { opacity:.82; }
+.btn-send:active { transform:scale(.92); }
+.btn-send:disabled { opacity:.28; cursor:default; }
 
-/* Quick options */
-.options {
-  display: flex; flex-wrap: wrap; gap: 7px;
-  padding: 0 20px 14px;
-  flex-shrink: 0;
-  animation: msg-in .3s ease;
-}
-.opt {
-  padding: 7px 13px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  font-family: 'Syne', sans-serif;
-  font-size: 11px;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all .15s;
-}
-.opt:hover { border-color: rgba(139,124,248,.4); color: var(--text); background: var(--accent-soft); }
+/* ── Screen 2 — capabilities ── */
+.cap-header { padding:26px 26px 20px; flex-shrink:0; }
+.cap-title { font-size:22px; font-weight:800; letter-spacing:-.01em; line-height:1.2; }
+.cap-sub { font-size:12px; color:var(--dim2); margin-top:6px; line-height:1.5; }
 
-/* ── SCREEN 2 — PERSONALITY ── */
-#s2 {
-  padding: 36px 28px 28px;
-  gap: 0;
+.cap-grid { padding:0 26px; display:flex; flex-direction:column; gap:8px; }
+.cap-card {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px 14px; border-radius:12px;
+  background:var(--s1); border:1px solid var(--b1);
+  animation:card-in .25s ease both;
 }
+@keyframes card-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.cap-icon {
+  width:32px; height:32px; border-radius:9px; flex-shrink:0;
+  background:var(--as); border:1px solid var(--ab);
+  display:flex; align-items:center; justify-content:center;
+  color:var(--acc);
+}
+.cap-text {}
+.cap-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.cap-desc { font-size:11px; color:var(--dim2); line-height:1.5; }
 
-.s2-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 28px;
-  flex-shrink: 0;
+/* ── Screen 3 — permission tier ── */
+.tier-header { padding:26px 26px 20px; flex-shrink:0; }
+.tier-title { font-size:20px; font-weight:800; }
+.tier-sub { font-size:12px; color:var(--dim2); margin-top:6px; line-height:1.5; }
+.tier-cards { padding:0 26px; display:flex; flex-direction:column; gap:10px; }
+.tier-card {
+  padding:14px 16px; border-radius:12px;
+  background:var(--s1); border:2px solid var(--b1);
+  cursor:pointer; transition:all .16s; position:relative;
 }
-.s2-title { font-size: 16px; font-weight: 700; }
-.s2-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.tier-card.on { background:var(--as); border-color:var(--acc); }
+.tier-card:hover:not(.on) { border-color:var(--ab); background:rgba(139,124,248,.06); }
+.tier-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+.tier-name { font-size:13px; font-weight:700; }
+.tier-badge {
+  font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  padding:2px 8px; border-radius:20px;
+  background:var(--b1); color:var(--dim2);
+}
+.tier-card.on .tier-badge { background:var(--acc); color:#fff; }
+.tier-desc { font-size:11px; color:var(--dim2); line-height:1.55; }
+.tier-examples { margin-top:8px; display:flex; flex-direction:column; gap:3px; }
+.tier-ex {
+  display:flex; align-items:center; gap:6px;
+  font-size:10.5px; color:var(--dim); font-family:'JetBrains Mono',monospace;
+}
+.tier-ex-dot { width:4px; height:4px; border-radius:50%; flex-shrink:0; }
 
-.q-block {
-  margin-bottom: 22px;
-  flex-shrink: 0;
-}
-.q-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 10px;
-}
-.seg {
-  display: flex; gap: 7px;
-}
+/* ── Screen 4 — personality ── */
+.pers-header { padding:26px 26px 20px; flex-shrink:0; }
+.pers-title { font-size:20px; font-weight:800; }
+.pers-sub { font-size:12px; color:var(--dim2); margin-top:6px; }
+.pers-body { padding:0 26px; display:flex; flex-direction:column; gap:18px; }
+.q-block {}
+.q-label { font-size:9.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+.seg { display:flex; gap:7px; }
 .seg-btn {
-  flex: 1;
-  padding: 10px 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-dim);
-  font-family: 'Syne', sans-serif;
-  font-size: 11px; font-weight: 600;
-  cursor: pointer;
-  transition: all .15s;
-  text-align: center;
-  line-height: 1.3;
+  flex:1; padding:10px 6px; background:var(--s1); border:1px solid var(--b1);
+  border-radius:10px; color:var(--dim2);
+  font-family:'Syne',sans-serif; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all .15s; text-align:center; line-height:1.3;
 }
-.seg-btn:hover { border-color: rgba(139,124,248,.3); color: var(--text); }
-.seg-btn.on { background: var(--accent-soft); border-color: rgba(139,124,248,.5); color: var(--text); }
-.seg-btn .desc { font-size: 9px; font-weight: 400; opacity: .6; display: block; margin-top: 2px; }
+.seg-btn:hover { border-color:var(--ab); color:var(--text); }
+.seg-btn.on { background:var(--as); border-color:var(--acc); color:var(--text); }
+.seg-btn .desc { font-size:9px; font-weight:400; opacity:.55; display:block; margin-top:2px; }
 
-.progress {
-  display: flex; gap: 6px; align-items: center;
-  margin-bottom: 24px; flex-shrink: 0;
+/* ── Shared footer button ── */
+.btn-next, .btn-back {
+  padding:12px 22px; border-radius:11px; border:none;
+  font-family:'Syne',sans-serif; font-size:13px; font-weight:700;
+  letter-spacing:.05em; cursor:pointer;
+  transition:opacity .15s,transform .1s;
 }
-.prog-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--border);
-  transition: background .2s;
-}
-.prog-dot.done { background: var(--accent); }
-
-.btn-finish {
-  width: 100%;
-  padding: 13px;
-  background: var(--accent);
-  border: none; border-radius: 11px;
-  color: white;
-  font-family: 'Syne', sans-serif;
-  font-size: 14px; font-weight: 700;
-  letter-spacing: .06em;
-  cursor: pointer;
-  margin-top: auto;
-  transition: opacity .15s, transform .1s;
-  flex-shrink: 0;
-}
-.btn-finish:hover { opacity: .85; }
-.btn-finish:active { transform: scale(.98); }
+.btn-next { background:var(--acc); color:#fff; flex:1; }
+.btn-next:hover { opacity:.86; }
+.btn-next:active { transform:scale(.97); }
+.btn-back { background:var(--s1); border:1px solid var(--b1); color:var(--dim2); width:44px; padding:12px; flex-shrink:0; }
+.btn-back:hover { border-color:var(--ab); color:var(--text); }
+.footer-row { display:flex; gap:9px; align-items:center; }
 </style>
 </head>
 <body>
 
-<!-- SCREEN 1 — conversational intro -->
+<!-- Progress bar -->
+<div class="prog-bar"><div class="prog-fill" id="prog" style="width:25%"></div></div>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     SCREEN 1 — Chat intro (name + pronouns)
+──────────────────────────────────────────────────────────────────────────── -->
 <div class="screen active" id="s1">
   <div class="chat-area" id="chat"></div>
-  <div id="opts-container"></div>
-  <div class="input-row">
-    <input class="chat-inp" id="inp" type="text" placeholder="type here…" autocomplete="off" disabled />
+  <div id="opts-wrap"></div>
+  <div class="inp-row">
+    <input class="chat-inp" id="inp" type="text" placeholder="type here…" autocomplete="off" disabled>
     <button class="btn-send" id="send-btn" onclick="sendMsg()" disabled>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
     </button>
   </div>
 </div>
 
-<!-- SCREEN 2 — personality -->
+<!-- ─────────────────────────────────────────────────────────────────────────
+     SCREEN 2 — What I can do
+──────────────────────────────────────────────────────────────────────────── -->
 <div class="screen" id="s2">
-  <div class="s2-header">
-    <div class="signal-wrap">
-      <div class="s-arc s-a1"></div><div class="s-arc s-a2"></div>
-      <div class="s-arc s-a3"></div><div class="s-dot"></div>
+  <div class="screen-inner">
+    <div class="cap-header">
+      <div class="cap-title">Here's what<br>I can do.</div>
+      <div class="cap-sub">I run natively on your machine. No cloud lag.<br>Everything happens right here.</div>
     </div>
-    <div>
-      <div class="s2-title">One more thing.</div>
-      <div class="s2-sub">How should I operate?</div>
+    <div class="screen-scroll" style="padding-top:0">
+      <div class="cap-grid">
+
+        <div class="cap-card" style="animation-delay:.04s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">Open apps &amp; write to them</div>
+            <div class="cap-desc">"Open Notepad and write a poem" — she opens it and types the poem directly inside.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.08s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">Control Spotify</div>
+            <div class="cap-desc">"Play my liked songs" or "skip this one" — she handles it without you touching the app.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.12s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">See your screen</div>
+            <div class="cap-desc">When vision is on, she can describe what's open, spot errors, or help you navigate.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.16s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">Search the web</div>
+            <div class="cap-desc">She'll search and give you the answer directly — no opening a browser, no waiting.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.20s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">Create &amp; save files</div>
+            <div class="cap-desc">She saves everything to a dedicated SOUL folder in your Documents — always finds it.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.24s">
+          <div class="cap-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name">Watch the machine</div>
+            <div class="cap-desc">RAM, CPU, battery, what's eating resources — she monitors silently and speaks when it matters.</div>
+          </div>
+        </div>
+
+        <div class="cap-card" style="animation-delay:.28s;border-color:var(--ab)">
+          <div class="cap-icon" style="background:rgba(77,232,154,.1);border-color:rgba(77,232,154,.3);color:#4de89c">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="cap-text">
+            <div class="cap-name" style="color:#4de89c">Remembers you</div>
+            <div class="cap-desc">She builds a memory across sessions — your name, your habits, what you've told her.</div>
+          </div>
+        </div>
+
+      </div>
+      <div style="height:16px"></div>
+    </div>
+    <div class="screen-footer">
+      <div class="footer-row">
+        <button class="btn-back" onclick="goBack(2)">←</button>
+        <button class="btn-next" onclick="goTo(3)">Got it →</button>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="progress">
-    <div class="prog-dot done"></div>
-    <div class="prog-dot done"></div>
-    <div class="prog-dot" id="p3"></div>
-  </div>
+<!-- ─────────────────────────────────────────────────────────────────────────
+     SCREEN 3 — Permission tier
+──────────────────────────────────────────────────────────────────────────── -->
+<div class="screen" id="s3">
+  <div class="screen-inner">
+    <div class="tier-header">
+      <div class="tier-title">Choose how much<br>she can do.</div>
+      <div class="tier-sub">You can change this anytime in the Workspace.</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0">
+      <div class="tier-cards">
 
-  <div class="q-block">
-    <div class="q-label">When I have an opinion</div>
-    <div class="seg" id="seg-direct">
-      <button class="seg-btn on" data-val="direct" onclick="pick('seg-direct',this)">
-        Just say it<span class="desc">unfiltered</span>
-      </button>
-      <button class="seg-btn" data-val="balanced" onclick="pick('seg-direct',this)">
-        Pick moments<span class="desc">balanced</span>
-      </button>
-      <button class="seg-btn" data-val="gentle" onclick="pick('seg-direct',this)">
-        Tread lightly<span class="desc">careful</span>
-      </button>
+        <div class="tier-card" id="tc-min" onclick="pickTier('minimal')">
+          <div class="tier-top">
+            <div class="tier-name">Minimal</div>
+            <div class="tier-badge">CAUTIOUS</div>
+          </div>
+          <div class="tier-desc">Apps only. Confirms everything before acting. Best if you want full control.</div>
+          <div class="tier-examples">
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#8b7cf8"></div>open apps, read files</div>
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#8b7cf8"></div>confirms before typing</div>
+          </div>
+        </div>
+
+        <div class="tier-card on" id="tc-std" onclick="pickTier('standard')">
+          <div class="tier-top">
+            <div class="tier-name">Standard</div>
+            <div class="tier-badge">RECOMMENDED</div>
+          </div>
+          <div class="tier-desc">Apps, files, web. Asks before deleting or overwriting. Best for everyday use.</div>
+          <div class="tier-examples">
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#4de89c"></div>open + write + search</div>
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#4de89c"></div>asks before destructive actions</div>
+          </div>
+        </div>
+
+        <div class="tier-card" id="tc-full" onclick="pickTier('full')">
+          <div class="tier-top">
+            <div class="tier-name">Full</div>
+            <div class="tier-badge">POWER</div>
+          </div>
+          <div class="tier-desc">Everything, no confirms. Shell commands, file deletion, no questions asked.</div>
+          <div class="tier-examples">
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#f97316"></div>all actions, no prompts</div>
+            <div class="tier-ex"><div class="tier-ex-dot" style="background:#f97316"></div>use only if you trust her</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Shortcuts preview -->
+      <div style="margin:16px 26px 0">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Shortcuts</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + S</span>
+            <span style="font-size:11px;color:var(--dim2)">Summon / focus SOUL</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + W</span>
+            <span style="font-size:11px;color:var(--dim2)">Open Workspace</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + H</span>
+            <span style="font-size:11px;color:var(--dim2)">Hide to ambient orb</span>
+          </div>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+    <div class="screen-footer">
+      <div class="footer-row">
+        <button class="btn-back" onclick="goBack(3)">←</button>
+        <button class="btn-next" onclick="goTo(4)">Continue →</button>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="q-block">
-    <div class="q-label">When I notice something</div>
-    <div class="seg" id="seg-proact">
-      <button class="seg-btn on" data-val="speaks_up" onclick="pick('seg-proact',this)">
-        Tell me anyway<span class="desc">proactive</span>
-      </button>
-      <button class="seg-btn" data-val="when_asked" onclick="pick('seg-proact',this)">
-        Wait til asked<span class="desc">reactive</span>
-      </button>
+<!-- ─────────────────────────────────────────────────────────────────────────
+     SCREEN 4 — Personality
+──────────────────────────────────────────────────────────────────────────── -->
+<div class="screen" id="s4">
+  <div class="screen-inner">
+    <div class="pers-header">
+      <div class="pers-title">Dial in<br>the vibe.</div>
+      <div class="pers-sub" style="margin-top:6px;font-size:12px;color:var(--dim2);line-height:1.5">These tune her defaults. She'll still adapt naturally.</div>
+    </div>
+    <div class="screen-scroll" style="padding-top:0">
+      <div class="pers-body">
+
+        <div class="q-block">
+          <div class="q-label">When she has an opinion</div>
+          <div class="seg" id="seg-direct">
+            <button class="seg-btn on" data-val="direct" onclick="pick('seg-direct',this)">
+              Just say it<span class="desc">unfiltered</span>
+            </button>
+            <button class="seg-btn" data-val="balanced" onclick="pick('seg-direct',this)">
+              Pick moments<span class="desc">balanced</span>
+            </button>
+            <button class="seg-btn" data-val="gentle" onclick="pick('seg-direct',this)">
+              Tread lightly<span class="desc">careful</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-label">When she notices something</div>
+          <div class="seg" id="seg-proact">
+            <button class="seg-btn on" data-val="speaks_up" onclick="pick('seg-proact',this)">
+              Tell me anyway<span class="desc">proactive</span>
+            </button>
+            <button class="seg-btn" data-val="when_asked" onclick="pick('seg-proact',this)">
+              Wait til asked<span class="desc">reactive</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-label">Primary focus</div>
+          <div class="seg" id="seg-focus">
+            <button class="seg-btn on" data-val="mixed" onclick="pick('seg-focus',this)">
+              Everything<span class="desc">adaptive</span>
+            </button>
+            <button class="seg-btn" data-val="code" onclick="pick('seg-focus',this)">
+              Technical<span class="desc">dev / code</span>
+            </button>
+            <button class="seg-btn" data-val="creative" onclick="pick('seg-focus',this)">
+              Creative<span class="desc">writing / art</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SOUL folder preview -->
+        <div style="padding:12px 14px;border-radius:11px;background:var(--s1);border:1px solid var(--b1)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)">SOUL Folder</span>
+          </div>
+          <div style="font-size:11px;color:var(--dim2);line-height:1.55">Files she creates live in <span style="font-family:'JetBrains Mono',monospace;color:var(--acc);font-size:10px">Documents\SOUL\</span> — always findable, never buried.</div>
+        </div>
+
+      </div>
+      <div style="height:16px"></div>
+    </div>
+    <div class="screen-footer">
+      <div class="footer-row">
+        <button class="btn-back" onclick="goBack(4)">←</button>
+        <button class="btn-next" onclick="finish()">Start →</button>
+      </div>
     </div>
   </div>
-
-  <div class="q-block">
-    <div class="q-label">Primary focus</div>
-    <div class="seg" id="seg-focus">
-      <button class="seg-btn on" data-val="mixed" onclick="pick('seg-focus',this)">
-        Everything<span class="desc">adaptive</span>
-      </button>
-      <button class="seg-btn" data-val="code" onclick="pick('seg-focus',this)">
-        Technical<span class="desc">dev / code</span>
-      </button>
-      <button class="seg-btn" data-val="creative" onclick="pick('seg-focus',this)">
-        Creative<span class="desc">writing / design</span>
-      </button>
-    </div>
-  </div>
-
-  <button class="btn-finish" onclick="finish()">Start</button>
 </div>
 
 <script>
-// ── State ──────────────────────────────────────
-const state = {
-  step: 0,
-  name: '',
-  user_name: '',
-  pronouns: 'she/her',
-  device_name: '',
-  waiting_for: null,  // 'name' | 'user_name' | 'pronouns'
+// ── State ──────────────────────────────────────────────────────────────────
+const S = {
+  step:0, name:'', user_name:'', pronouns:'she/her',
+  device_name:'', permission_tier:'standard',
+  waiting_for:null,
 };
 
-// Detect device name — filter machine IDs
-function detectDeviceName() {
-  // Electron exposes os via preload if available
-  // Fall back to user agent hints
-  try {
-    const hostname = window.location.hostname;
-    if (hostname && hostname !== '127.0.0.1' && hostname !== 'localhost') {
-      return hostname;
-    }
-  } catch(e) {}
-  return null;
-}
+const PROG = { 1:'25%', 2:'50%', 3:'75%', 4:'100%' };
 
-function isHumanName(name) {
-  if (!name) return false;
-  // Reject: all digits, has lots of dashes+numbers, too generic
-  const lower = name.toLowerCase();
-  const generic = ['desktop', 'laptop', 'computer', 'pc', 'home', 'user', 'admin', 'windows'];
-  if (generic.some(g => lower === g)) return false;
-  // Reject DESKTOP-XXXXXXX pattern
-  if (/^(desktop|laptop|computer)[-_]\w{4,}$/i.test(name)) return false;
-  // Reject mostly numbers
-  if ((name.match(/\d/g) || []).length > 3) return false;
-  return name.length >= 2 && name.length <= 20;
+// ── Screen nav ─────────────────────────────────────────────────────────────
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.getElementById('prog').style.width = PROG[n] || '25%';
 }
+function goTo(n){ showScreen(n); }
+function goBack(n){ showScreen(n-1); }
 
-// ── Chat UI ────────────────────────────────────
-function soulMsg(text, delay = 0) {
-  return new Promise(resolve => {
-    setTimeout(() => {
+// ── Chat UI ────────────────────────────────────────────────────────────────
+function mk56(){ return `<div class="signal" style="width:28px;height:28px;flex-shrink:0">
+  <div class="s-arc s-a1" style="width:28px;height:28px"></div>
+  <div class="s-arc s-a2" style="width:19px;height:19px"></div>
+  <div class="s-arc s-a3" style="width:11px;height:11px"></div>
+  <div class="s-dot"       style="width:3px;height:3px"></div>
+</div>`; }
+
+function soulMsg(text, delay=0){
+  return new Promise(res=>{
+    setTimeout(()=>{
       const chat = document.getElementById('chat');
-      // Remove typing indicator
-      document.getElementById('typing')?.remove();
+      document.getElementById('typing-ind')?.remove();
       const el = document.createElement('div');
       el.className = 'msg-soul';
-      el.innerHTML = `
-        <div class="avatar">
-          <div class="signal-wrap" style="width:28px;height:28px">
-            <div class="s-arc s-a1" style="width:28px;height:28px"></div>
-            <div class="s-arc s-a2" style="width:19px;height:19px"></div>
-            <div class="s-arc s-a3" style="width:11px;height:11px"></div>
-            <div class="s-dot" style="width:3px;height:3px"></div>
-          </div>
-        </div>
-        <div class="bubble">${text}</div>`;
-      chat.appendChild(el);
-      chat.scrollTop = chat.scrollHeight;
-      resolve();
+      el.innerHTML = `${mk56()}<div class="bub">${text}</div>`;
+      chat.appendChild(el); chat.scrollTop=chat.scrollHeight; res();
     }, delay);
   });
 }
-
-function userMsg(text) {
+function userMsg(t){
   const chat = document.getElementById('chat');
+  document.getElementById('typing-ind')?.remove();
   const el = document.createElement('div');
   el.className = 'msg-user';
-  el.innerHTML = `<div class="bubble">${text}</div>`;
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
+  el.innerHTML = `<div class="bub">${t}</div>`;
+  chat.appendChild(el); chat.scrollTop=chat.scrollHeight;
 }
-
-function showTyping(delay = 0) {
-  setTimeout(() => {
-    document.getElementById('typing')?.remove();
+function showTyping(delay=0){
+  setTimeout(()=>{
+    document.getElementById('typing-ind')?.remove();
     const chat = document.getElementById('chat');
     const el = document.createElement('div');
-    el.className = 'typing'; el.id = 'typing';
-    el.innerHTML = `
-      <div class="signal-wrap" style="width:28px;height:28px">
-        <div class="s-arc s-a1" style="width:28px;height:28px"></div>
-        <div class="s-arc s-a2" style="width:19px;height:19px"></div>
-        <div class="s-dot" style="width:3px;height:3px"></div>
-      </div>
-      <div class="typing-dots">
-        <div class="td"></div><div class="td"></div><div class="td"></div>
-      </div>`;
-    chat.appendChild(el);
-    chat.scrollTop = chat.scrollHeight;
+    el.className='typing'; el.id='typing-ind';
+    el.innerHTML=`${mk56()}<div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+    chat.appendChild(el); chat.scrollTop=chat.scrollHeight;
   }, delay);
 }
-
-function showOptions(opts) {
-  const container = document.getElementById('opts-container');
-  container.innerHTML = '';
-  const div = document.createElement('div');
-  div.className = 'options';
-  opts.forEach(({label, val}) => {
-    const btn = document.createElement('button');
-    btn.className = 'opt';
-    btn.textContent = label;
-    btn.onclick = () => { container.innerHTML = ''; handleOption(val || label); };
-    div.appendChild(btn);
+function showOpts(opts){
+  const w = document.getElementById('opts-wrap');
+  w.innerHTML='';
+  const div = document.createElement('div'); div.className='opts-wrap';
+  opts.forEach(({label,val})=>{
+    const b = document.createElement('button'); b.className='opt';
+    b.textContent=label;
+    b.onclick=()=>{ w.innerHTML=''; handleOpt(val||label); };
+    div.appendChild(b);
   });
-  container.appendChild(div);
+  w.appendChild(div);
+}
+function enableInp(ph='type here…'){
+  document.getElementById('inp').disabled=false;
+  document.getElementById('send-btn').disabled=false;
+  document.getElementById('inp').placeholder=ph;
+  document.getElementById('inp').focus();
+}
+function disableInp(){
+  document.getElementById('inp').disabled=true;
+  document.getElementById('send-btn').disabled=true;
+  document.getElementById('inp').value='';
 }
 
-function enableInput(placeholder = 'type here…') {
-  const inp = document.getElementById('inp');
-  const btn = document.getElementById('send-btn');
-  inp.disabled = false;
-  btn.disabled = false;
-  inp.placeholder = placeholder;
-  inp.focus();
-}
-
-function disableInput() {
-  const inp = document.getElementById('inp');
-  const btn = document.getElementById('send-btn');
-  inp.disabled = true;
-  btn.disabled = true;
-  inp.value = '';
-}
-
-// ── Flow ───────────────────────────────────────
-async function runIntro() {
-  // Try to get device name from backend
-  try {
+// ── Flow ───────────────────────────────────────────────────────────────────
+async function startFlow(){
+  try{
     const r = await fetch('http://127.0.0.1:8765/status');
-    const data = await r.json();
-    const cn = data.computer_name || '';
-    if (cn && isHumanName(cn)) {
-      state.device_name = cn;
-    }
-  } catch(e) {}
+    const d = await r.json();
+    const cn = d.computer_name||'';
+    if(cn && !/^(desktop|laptop|computer|pc|home|user|admin)[-_]/i.test(cn) && cn.length>=2 && cn.length<=20)
+      S.device_name = cn;
+  }catch(e){}
 
   showTyping();
-  await soulMsg("Hey. I'm SOUL — I'll be living on this machine.", 1200);
-
+  await soulMsg("Hey. I'm SOUL — I'll be living on this machine.", 1100);
   showTyping(300);
-  await soulMsg("What should I call you?", 1400);
-
-  state.waiting_for = 'user_name';
-  enableInput('your name…');
+  await soulMsg("What should I call you?", 1500);
+  S.waiting_for='user_name';
+  enableInp('your name…');
 }
 
-async function handleOption(val) {
-  userMsg(val);
-  disableInput();
-  await handleResponse(val);
+async function handleOpt(val){ userMsg(val); disableInp(); await handleResp(val); }
+function sendMsg(){
+  const v = document.getElementById('inp').value.trim();
+  if(!v)return;
+  document.getElementById('inp').value=''; disableInp();
+  userMsg(v); handleResp(v);
 }
+document.getElementById('inp').addEventListener('keydown', e=>{ if(e.key==='Enter')sendMsg(); });
 
-function sendMsg() {
-  const inp = document.getElementById('inp');
-  const text = inp.value.trim();
-  if (!text) return;
-  inp.value = '';
-  disableInput();
-  userMsg(text);
-  handleResponse(text);
-}
-
-async function handleResponse(text) {
-  if (state.waiting_for === 'user_name') {
-    state.user_name = text;
+async function handleResp(text){
+  if(S.waiting_for==='user_name'){
+    S.user_name=text;
     showTyping(300);
-
-    // Try to detect device name
-    let deviceSuggestion = null;
-    try {
-      // Ask backend for hostname
-      const r = await fetch('http://127.0.0.1:8765/status');
-      // Can't get hostname from status, skip
-    } catch(e) {}
-
-    // Check if user's name could also be the device name (e.g. "Thinkiee")
-    const lower = text.toLowerCase();
-    if (isHumanName(text)) {
-      // Ask if they want to name SOUL too
-      await soulMsg(`${text}. Got it.`, 900);
-      showTyping(300);
-      await soulMsg(`What do you want to call me? Or keep "SOUL".`, 1500);
-      state.waiting_for = 'name';
-      showOptions([
-        {label: 'Keep SOUL'},
-        {label: 'Something else', val: '__custom_name__'}
-      ]);
-      enableInput('give me a name…');
-    } else {
-      await soulMsg(`Alright.`, 900);
-      showTyping(300);
-      await soulMsg(`What should I go by? Or just keep "SOUL".`, 1500);
-      state.waiting_for = 'name';
-      showOptions([{label: 'Keep SOUL'}]);
-      enableInput('name me…');
-    }
-
-  } else if (state.waiting_for === 'name') {
-    if (text === 'Keep SOUL' || text === '__custom_name__') {
-      if (text === 'Keep SOUL') {
-        state.name = 'SOUL';
-        userMsg('Keep SOUL'); // already shown in some paths
-      }
-    } else {
-      state.name = text.charAt(0).toUpperCase() + text.slice(1);
-    }
-    if (!state.name) state.name = 'SOUL';
-
-    showTyping(400);
-    await soulMsg(`${state.name} it is.`, 900);
+    await soulMsg(`${text}. Got it.`, 900);
     showTyping(300);
-    await soulMsg(`What pronouns?`, 1400);
-    state.waiting_for = 'pronouns';
-    showOptions([
-      {label: 'she/her'},
-      {label: 'he/him'},
-      {label: 'they/them'},
-    ]);
+    await soulMsg(`What should I go by? Or keep "SOUL".`, 1400);
+    S.waiting_for='name';
+    showOpts([{label:'Keep SOUL'},{label:'Something else',val:'__custom__'}]);
+    enableInp('name me…');
 
-  } else if (state.waiting_for === 'pronouns') {
-    state.pronouns = text;
+  } else if(S.waiting_for==='name'){
+    if(text==='Keep SOUL'||text==='__custom__') S.name = text==='Keep SOUL' ? 'SOUL' : '';
+    else S.name = text.charAt(0).toUpperCase()+text.slice(1);
+    if(!S.name) S.name='SOUL';
     showTyping(400);
-    await soulMsg(`Got it. One more screen — how I should operate.`, 1100);
-    setTimeout(() => goToScreen2(), 1200);
+    await soulMsg(`${S.name} it is.`, 900);
+    showTyping(300);
+    await soulMsg(`Pronouns?`, 1200);
+    S.waiting_for='pronouns';
+    showOpts([{label:'she/her'},{label:'he/him'},{label:'they/them'}]);
+
+  } else if(S.waiting_for==='pronouns'){
+    S.pronouns=text;
+    showTyping(400);
+    await soulMsg(`Got it. Let me show you what I can do.`, 1000);
+    setTimeout(()=>goTo(2), 1200);
   }
 }
 
-function goToScreen2() {
-  document.getElementById('s1').classList.remove('active');
-  document.getElementById('s2').classList.add('active');
-  document.getElementById('p3').classList.add('done');
+// ── Tier picker ────────────────────────────────────────────────────────────
+function pickTier(t){
+  S.permission_tier=t;
+  ['min','std','full'].forEach(k=>document.getElementById('tc-'+k).classList.remove('on'));
+  const map={minimal:'min',standard:'std',full:'full'};
+  document.getElementById('tc-'+map[t]).classList.add('on');
 }
 
-// ── Screen 2 ───────────────────────────────────
-function pick(segId, btn) {
-  document.querySelectorAll('#' + segId + ' .seg-btn').forEach(b => b.classList.remove('on'));
+// ── Personality ────────────────────────────────────────────────────────────
+function pick(segId, btn){
+  document.querySelectorAll('#'+segId+' .seg-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
 }
+function getVal(segId){ return document.querySelector('#'+segId+' .seg-btn.on')?.dataset.val||''; }
 
-function getVal(segId) {
-  return document.querySelector('#' + segId + ' .seg-btn.on')?.dataset.val || '';
-}
-
-async function finish() {
-  const config = {
-    name: state.name || 'SOUL',
-    pronouns: state.pronouns || 'she/her',
-    user_name: state.user_name,
-    device_name: state.device_name,
+// ── Finish ─────────────────────────────────────────────────────────────────
+async function finish(){
+  const cfg = {
+    name: S.name||'SOUL',
+    pronouns: S.pronouns||'she/her',
+    user_name: S.user_name,
+    device_name: S.device_name,
+    permission_tier: S.permission_tier,
     directness: getVal('seg-direct'),
     proactivity: getVal('seg-proact'),
     focus: getVal('seg-focus'),
   };
-
-  try {
-    await fetch('http://127.0.0.1:8765/onboarding', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(config)
+  try{
+    await fetch('http://127.0.0.1:8765/onboarding',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(cfg)
     });
-  } catch(e) {}
-
-  if (window.pacify) {
-    await window.pacify.saveConfig({entity: config});
-  }
-
-  window.location.href = 'index.html';
+  }catch(e){}
+  if(window.pacify) await window.pacify.saveConfig({entity:cfg});
+  window.location.href='index.html';
 }
 
-// Input handler
-document.getElementById('inp').addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendMsg();
-});
-
-// Start
-runIntro();
+// ── Start ──────────────────────────────────────────────────────────────────
+startFlow();
 </script>
 </body>
 </html>

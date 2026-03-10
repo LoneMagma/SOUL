@@ -1,13 +1,11 @@
 {
   "name": "soul",
-  "version": "0.1.0",
-  "description": "SOUL \u2014 your device companion",
+  "version": "1.6.0",
+  "description": "SOUL — your device companion",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
     "dev": "NODE_ENV=development electron ."
   },
   "dependencies": {},
@@ -16,40 +14,27 @@
     "electron-builder": "^24.0.0"
   },
   "build": {
-    "appId": "com.soul.app",
+    "appId": "com.lonemagma.soul",
     "productName": "SOUL",
     "directories": {
       "output": "dist"
     },
     "files": [
       "**/*",
-      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,readme.md}",
       "!**/__tests__/**",
-      "!**/test/**"
+      "!**/test/**",
+      "!dist/**"
     ],
     "extraResources": [
       {
-        "from": "../backend",
-        "to": "backend",
-        "filter": [
-          "**/*",
-          "!__pycache__",
-          "!*.pyc"
-        ]
+        "from": "../backend/dist/soul_backend.exe",
+        "to": "backend/soul_backend.exe"
       }
     ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns",
-      "category": "public.app-category.productivity"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
     },
     "nsis": {
       "oneClick": false,
@@ -57,7 +42,8 @@
       "installerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "SOUL"
     }
   }
 }

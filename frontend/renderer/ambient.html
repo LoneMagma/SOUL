@@ -1,456 +1,296 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-
 html, body {
-  width: 100px; height: 160px; /* expanded for quick-strip */
-  background: transparent;
-  overflow: visible;
-  margin: 0; padding: 0;
-  -webkit-app-region: no-drag;
+  width:100%; height:100%;
+  overflow:hidden;
+  background:transparent !important;
+  user-select:none;
+  font-family:'Segoe UI',system-ui,sans-serif;
 }
+#cv {
+  position:absolute; top:0; left:0;
+  width:160px; height:160px;
+  cursor:grab;
+  -webkit-app-region:drag;
+}
+#cv:active { cursor:grabbing; }
 
-/* ─────────────────────────────────────
-   OUTWARD PULSE RINGS (beyond the circle)
-   Positioned absolutely, centered on orb
-───────────────────────────────────── */
-.pulse-rings {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100px; height: 100px;
-  pointer-events: none; z-index: 0;
+/* ── Strip ── */
+.strip {
+  position:absolute; bottom:0; left:0; right:0; height:56px;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:7px;
+  -webkit-app-region:no-drag; pointer-events:all;
 }
-.ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(139,124,248,.0);
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%) scale(1);
-  opacity: 0;
+.state-pill {
+  display:flex; align-items:center; gap:5px;
+  padding:3px 10px 3px 7px; border-radius:20px;
+  background:rgba(0,0,0,.38); backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.08);
+  transition:border-color .5s; pointer-events:none;
 }
-/* Idle: slow soft expand */
-.orb-wrap.idle .ring { animation: ring-idle 3.6s ease-out infinite; }
-.orb-wrap.idle .ring:nth-child(1){ animation-delay:0s;    border-color:rgba(139,124,248,.22); }
-.orb-wrap.idle .ring:nth-child(2){ animation-delay:1.2s;  border-color:rgba(139,124,248,.15); }
-.orb-wrap.idle .ring:nth-child(3){ animation-delay:2.4s;  border-color:rgba(139,124,248,.08); }
-
-/* Thinking: fast tight blue rings */
-.orb-wrap.thinking .ring { animation: ring-think 1.2s ease-out infinite; }
-.orb-wrap.thinking .ring:nth-child(1){ animation-delay:0s;   border-color:rgba(96,165,250,.4); }
-.orb-wrap.thinking .ring:nth-child(2){ animation-delay:.4s;  border-color:rgba(96,165,250,.25);}
-.orb-wrap.thinking .ring:nth-child(3){ animation-delay:.8s;  border-color:rgba(96,165,250,.12);}
-
-/* Speaking: green ripple */
-.orb-wrap.speaking .ring { animation: ring-speak .9s ease-out infinite; }
-.orb-wrap.speaking .ring:nth-child(1){ animation-delay:0s;   border-color:rgba(77,232,156,.45);}
-.orb-wrap.speaking .ring:nth-child(2){ animation-delay:.3s;  border-color:rgba(77,232,156,.28);}
-.orb-wrap.speaking .ring:nth-child(3){ animation-delay:.6s;  border-color:rgba(77,232,156,.14);}
-
-/* Pending: amber alert */
-.orb-wrap.pending .ring { animation: ring-pending 1.6s ease-out infinite; }
-.orb-wrap.pending .ring:nth-child(1){ animation-delay:0s;   border-color:rgba(245,191,90,.5); }
-.orb-wrap.pending .ring:nth-child(2){ animation-delay:.55s; border-color:rgba(245,191,90,.3); }
-.orb-wrap.pending .ring:nth-child(3){ animation-delay:1.1s; border-color:rgba(245,191,90,.15);}
-
-@keyframes ring-idle  {
-  0%   { width:100px;height:100px;opacity:0; }
-  15%  { opacity:1; }
-  100% { width:180px;height:180px;opacity:0; }
+.sdot {
+  width:5px; height:5px; border-radius:50%;
+  background:rgba(155,145,255,.78);
+  box-shadow:0 0 5px rgba(155,145,255,.4);
+  animation:dp 2.4s ease-in-out infinite;
+  transition:background .4s, box-shadow .4s;
 }
-@keyframes ring-think {
-  0%   { width:100px;height:100px;opacity:0; }
-  12%  { opacity:.9; }
-  100% { width:150px;height:150px;opacity:0; }
+@keyframes dp { 0%,100%{opacity:1} 50%{opacity:.32} }
+.slbl {
+  font-size:7.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(220,215,255,.70); font-weight:600;
+  transition:color .3s;
 }
-@keyframes ring-speak {
-  0%   { width:100px;height:100px;opacity:0; }
-  10%  { opacity:1; }
-  100% { width:165px;height:165px;opacity:0; }
+.btns { display:flex; gap:8px; align-items:center; }
+.btn {
+  width:24px; height:24px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.36); color:rgba(210,205,255,.60);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all .14s; backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px); pointer-events:all;
 }
-@keyframes ring-pending {
-  0%   { width:100px;height:100px;opacity:0; }
-  15%  { opacity:.9; }
-  100% { width:160px;height:160px;opacity:0; }
-}
-
-/* ─────────────────────────────────────
-   ORB WRAPPER — clips the 100px orb
-───────────────────────────────────── */
-.orb-wrap {
-  position: relative;
-  width: 100px; height: 100px;
-  flex-shrink: 0;
-  /* Hard circle clip */
-  -webkit-mask: radial-gradient(circle 49px at center, black 100%, transparent 100%);
-}
-
-/* ─────────────────────────────────────
-   ORB SHELL
-───────────────────────────────────── */
-.orb {
-  width: 100px; height: 100px; border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%,
-    #171a2c 0%, #0c0e1a 55%, #060811 100%);
-  border: 1px solid rgba(139,124,248,0.3);
-  box-shadow:
-    0 0 0 1px rgba(139,124,248,.06),
-    0 14px 44px rgba(0,0,0,.96),
-    inset 0 1px 0 rgba(255,255,255,.06),
-    inset 0 -1px 0 rgba(0,0,0,.5);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; position: relative;
-  transition: border-color .4s, box-shadow .4s;
-  user-select: none;
-}
-
-/* State borders */
-.orb-wrap.thinking .orb {
-  border-color: rgba(96,165,250,.52);
-  box-shadow: 0 0 0 1px rgba(96,165,250,.08),
-    0 14px 44px rgba(0,0,0,.96), 0 0 26px rgba(96,165,250,.18);
-}
-.orb-wrap.speaking .orb {
-  border-color: rgba(77,232,156,.44);
-  box-shadow: 0 0 0 1px rgba(77,232,156,.07),
-    0 14px 44px rgba(0,0,0,.96), 0 0 22px rgba(77,232,156,.16);
-}
-.orb-wrap.pending .orb {
-  border-color: rgba(245,191,90,.62);
-  animation: pending-glow 1.4s ease-in-out infinite;
-}
-@keyframes pending-glow {
-  0%,100%{ box-shadow:0 14px 44px rgba(0,0,0,.96),0 0 10px rgba(245,191,90,.14); }
-  50%    { box-shadow:0 14px 44px rgba(0,0,0,.96),0 0 30px rgba(245,191,90,.44); }
-}
-
-/* Outer spinning ring */
-.orb::before {
-  content:''; position:absolute; inset:-1px; border-radius:50%;
-  border:1.5px solid transparent;
-  border-top-color: rgba(139,124,248,.58);
-  border-right-color: rgba(139,124,248,.14);
-  animation: spin 9s linear infinite;
-}
-.orb-wrap.thinking .orb::before { border-top-color:rgba(96,165,250,.8);  animation-duration:2s;   }
-.orb-wrap.speaking .orb::before { border-top-color:rgba(77,232,156,.7);  animation-duration:1.5s; }
-.orb-wrap.pending  .orb::before { border-top-color:rgba(245,191,90,.8);  animation-duration:3s;   }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-/* Inner counter-ring */
-.orb::after {
-  content:''; position:absolute; inset:9px; border-radius:50%;
-  border:1px solid transparent;
-  border-bottom-color: rgba(139,124,248,.2);
-  border-left-color:   rgba(139,124,248,.09);
-  animation: spin 16s linear infinite reverse;
-}
-.orb-wrap.thinking .orb::after { border-bottom-color:rgba(96,165,250,.24); animation-duration:7s;  }
-.orb-wrap.speaking .orb::after { border-bottom-color:rgba(77,232,156,.22); animation-duration:4.5s;}
-
-/* Three arc rings */
-.arcs { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
-.arc  { position:absolute; border-radius:50%; border:1px solid transparent; }
-.a1 { width:80px;height:80px; border-top-color:rgba(139,124,248,.15); border-left-color:rgba(139,124,248,.06); animation:spin 16s linear infinite; }
-.a2 { width:62px;height:62px; border-right-color:rgba(139,124,248,.19); border-bottom-color:rgba(139,124,248,.05); animation:spin 10s linear infinite reverse; }
-.a3 { width:46px;height:46px; border-top-color:rgba(139,124,248,.12); border-bottom-color:rgba(139,124,248,.12); animation:spin 6s linear infinite; }
-.orb-wrap.thinking .a1{border-top-color:rgba(96,165,250,.22);  animation-duration:5.5s; }
-.orb-wrap.thinking .a2{border-right-color:rgba(96,165,250,.28); animation-duration:3s;  }
-.orb-wrap.thinking .a3{border-top-color:rgba(96,165,250,.2); border-bottom-color:rgba(96,165,250,.2); animation-duration:2s; }
-.orb-wrap.speaking .a1{border-top-color:rgba(77,232,156,.18);  animation-duration:4.5s;}
-.orb-wrap.speaking .a2{border-right-color:rgba(77,232,156,.22); animation-duration:2.8s;}
-.orb-wrap.speaking .a3{border-top-color:rgba(77,232,156,.16); border-bottom-color:rgba(77,232,156,.16); animation-duration:1.8s;}
-
-/* ── Waveform ── */
-.wave { position:relative; z-index:3; display:flex; align-items:center; gap:3px; height:28px; }
-.bar  { width:3px; border-radius:3px; background:#8b7cf8; box-shadow:0 0 6px rgba(139,124,248,.55); transform-origin:bottom center; animation:idle-breathe 2.8s ease-in-out infinite; }
-.bar:nth-child(1){height:8px;  animation-delay:0s;  }
-.bar:nth-child(2){height:14px; animation-delay:.2s; }
-.bar:nth-child(3){height:22px; animation-delay:.4s; }
-.bar:nth-child(4){height:14px; animation-delay:.6s; }
-.bar:nth-child(5){height:8px;  animation-delay:.8s; }
-@keyframes idle-breathe { 0%,100%{transform:scaleY(1);opacity:.5} 50%{transform:scaleY(.3);opacity:.18} }
-.orb-wrap.thinking .bar { background:#60a5fa; box-shadow:0 0 8px rgba(96,165,250,.9); animation:think-pulse .48s ease-in-out infinite alternate; }
-.orb-wrap.thinking .bar:nth-child(1){animation-delay:0s;}
-.orb-wrap.thinking .bar:nth-child(2){animation-delay:.07s;}
-.orb-wrap.thinking .bar:nth-child(3){animation-delay:.14s;}
-.orb-wrap.thinking .bar:nth-child(4){animation-delay:.07s;}
-.orb-wrap.thinking .bar:nth-child(5){animation-delay:0s;}
-@keyframes think-pulse { from{transform:scaleY(.4);opacity:.38} to{transform:scaleY(1.8);opacity:1} }
-.orb-wrap.speaking .bar{background:#4de89c;box-shadow:0 0 8px rgba(77,232,156,.75);}
-.orb-wrap.speaking .bar:nth-child(1){animation:speak-wave .62s ease-in-out infinite;animation-delay:0s;}
-.orb-wrap.speaking .bar:nth-child(2){animation:speak-wave .78s ease-in-out infinite;animation-delay:.1s;}
-.orb-wrap.speaking .bar:nth-child(3){animation:speak-wave .5s  ease-in-out infinite;animation-delay:.2s;}
-.orb-wrap.speaking .bar:nth-child(4){animation:speak-wave .72s ease-in-out infinite;animation-delay:.1s;}
-.orb-wrap.speaking .bar:nth-child(5){animation:speak-wave .62s ease-in-out infinite;animation-delay:0s;}
-@keyframes speak-wave { 0%{transform:scaleY(1)} 35%{transform:scaleY(2.2)} 65%{transform:scaleY(.5)} 100%{transform:scaleY(1.2)} }
-.orb-wrap.pending .bar { background:#f5bf5a; box-shadow:0 0 6px rgba(245,191,90,.65); }
-
-/* Notification badge */
-.badge {
-  position:absolute; top:4px; right:4px;
-  width:18px; height:18px; border-radius:50%;
-  background:#f5bf5a; color:#080a10;
-  font-size:8.5px; font-weight:800;
-  display:none; align-items:center; justify-content:center;
-  z-index:6; box-shadow:0 0 12px rgba(245,191,90,.85);
-  animation:badge-pop .8s ease-in-out infinite;
-}
-.badge.show{display:flex;}
-@keyframes badge-pop{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-
-/* ─────────────────────────────────────
-   HOVER QUICK BUTTONS STRIP
-   Slides in below the orb on hover
-───────────────────────────────────── */
-.quick-strip {
-  width: 100px;
-  display: flex; justify-content: center; gap: 6px;
-  padding: 7px 0 0;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .22s ease, transform .22s ease;
-  pointer-events: none;
-}
-.quick-strip.visible {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-.qbtn {
-  width: 28px; height: 28px; border-radius: 9px;
-  background: rgba(11,13,23,.92);
-  border: 1px solid rgba(139,124,248,.22);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  color: rgba(221,216,243,.65);
-  transition: background .13s, border-color .13s, color .13s;
-  backdrop-filter: blur(8px);
-}
-.qbtn:hover { background:rgba(139,124,248,.18); border-color:rgba(139,124,248,.5); color:#ddd8f3; }
-.qbtn.danger:hover { background:rgba(238,110,110,.12); border-color:rgba(238,110,110,.4); color:#ee6e6e; }
-
-/* Dragging cursor */
-.orb-wrap.dragging .orb { cursor: grabbing !important; }
+.btn:hover { background:rgba(139,124,248,.28); border-color:rgba(139,124,248,.7); color:#fff; transform:scale(1.14); }
+.btn:active { transform:scale(.88); }
+.btn.eye-off { border-color:rgba(255,255,255,.05); color:rgba(220,215,255,.25); }
+.btn.eye-off:hover { border-color:rgba(255,80,80,.5); color:rgba(255,120,120,.8); background:rgba(255,40,40,.14); }
+.conn { width:5px; height:5px; border-radius:50%; background:#4de89c; box-shadow:0 0 6px rgba(77,232,154,.8); animation:conn 3s ease-in-out infinite; }
+.conn.off { background:#ff5a5a; box-shadow:0 0 6px rgba(255,90,90,.6); animation:none; }
+@keyframes conn { 0%,100%{opacity:1} 50%{opacity:.22} }
 </style>
 </head>
 <body>
-
-<!-- Pulse rings outside orb (not clipped by -webkit-mask) -->
-<div class="pulse-rings" id="pulse-rings">
-  <div class="ring"></div>
-  <div class="ring"></div>
-  <div class="ring"></div>
-</div>
-
-<div class="orb-wrap idle" id="orb-wrap">
-  <div class="orb" id="orb">
-    <div class="arcs">
-      <div class="arc a1"></div>
-      <div class="arc a2"></div>
-      <div class="arc a3"></div>
-    </div>
-    <div class="wave">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
-    <div class="badge" id="badge"></div>
+<canvas id="cv"></canvas>
+<div class="strip">
+  <div class="state-pill" id="pill">
+    <div class="sdot" id="sdot"></div>
+    <span class="slbl" id="lbl">IDLE</span>
   </div>
-</div>
-
-<!-- Quick-action strip (visible on hover) -->
-<div class="quick-strip" id="quick-strip">
-  <!-- Open main -->
-  <div class="qbtn" id="qbtn-open" title="Open SOUL">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-      <polyline points="15 3 21 3 21 9"/><line x1="21" y1="3" x2="14" y2="10"/>
-      <path d="M10 13H3v8h8v-7"/>
-    </svg>
-  </div>
-  <!-- Workspace -->
-  <div class="qbtn" id="qbtn-ws" title="Workspace">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  </div>
-  <!-- Exit ambient -->
-  <div class="qbtn danger" id="qbtn-exit" title="Exit Ambient">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
+  <div class="btns">
+    <button class="btn" title="Open SOUL" onclick="doExpand()">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+    </button>
+    <div class="conn" id="cdot"></div>
+    <button class="btn" id="btn-eye" title="Screen awareness" onclick="doEye()">
+      <svg id="eye-svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
   </div>
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────
-let _state = 'idle';
-let pendingCount = 0;
+'use strict';
+const api = window.pacify || window.soulAPI || window.electronAPI || null;
 
-const wrap       = document.getElementById('orb-wrap');
-const pulseRings = document.getElementById('pulse-rings');
-const strip      = document.getElementById('quick-strip');
-const badge      = document.getElementById('badge');
+// ── Canvas ───────────────────────────────────────────────────────────────────
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W=160, H=160, CX=W/2, CY=H/2;
+cv.width=W; cv.height=H;
+const SOFT_R = 56;
 
-function setState(s) {
-  if (s === _state) return;
-  _state = s;
-  const hasPending = wrap.classList.contains('pending');
-  wrap.className = 'orb-wrap ' + s;
-  pulseRings.className = 'pulse-rings'; // reset
-  pulseRings.classList.add(s);
-  if (hasPending && s !== 'pending') {
-    wrap.classList.add('pending');
-    pulseRings.classList.add('pending');
-  }
+// ── States ───────────────────────────────────────────────────────────────────
+const STATES = {
+  idle:      {speed:.72,  ecc:.10, spread:1.08, coreR:7,   glow:.13, drift:.022, fade:.08, lbl:'IDLE',     dc:'rgba(150,140,255,.78)', dg:'rgba(150,140,255,.35)'},
+  listening: {speed:1.50, ecc:.30, spread:1.65, coreR:10,  glow:.20, drift:.006, fade:.10, lbl:'LISTEN',   dc:'rgba(77,232,175,.92)',  dg:'rgba(77,232,175,.40)'},
+  thinking:  {speed:.80,  ecc:.48, spread:1.85, coreR:7.5, glow:.16, drift:.009, fade:.07, lbl:'THINKING', dc:'rgba(190,140,255,.88)', dg:'rgba(190,140,255,.38)'},
+  speaking:  {speed:2.70, ecc:.70, spread:2.80, coreR:14,  glow:.25, drift:.003, fade:.11, lbl:'SPEAKING', dc:'rgba(120,210,255,.92)', dg:'rgba(120,210,255,.42)'},
+  alert:     {speed:3.90, ecc:.95, spread:3.90, coreR:17,  glow:.32, drift:.002, fade:.13, lbl:'ALERT',    dc:'rgba(255,100,80,.94)',  dg:'rgba(255,100,80,.40)'},
+};
+
+// ── Themes ─── bg is only used for the destination-out fade tint (low impact)
+const THEMES = {
+  midnight: {stateHues:{idle:230,listening:182,thinking:266,speaking:198,alert:6}, s:62},
+  terminal: {stateHues:{idle:142,listening:158,thinking:198,speaking:100,alert:0}, s:68},
+  paper:    {stateHues:{idle:36, listening:24, thinking:48, speaking:20, alert:5},  s:56},
+};
+let THEME = THEMES.midnight;
+
+const lerp  = (a,b,t) => a+(b-a)*t;
+const hsla  = (h,s,l,a) => `hsla(${h|0},${s|0}%,${l|0}%,${(+a).toFixed(3)})`;
+function lerpS(a,b,t){const o={};for(const k in a)o[k]=typeof a[k]==='number'?lerp(a[k],b[k],t):b[k];return o;}
+
+// ── Particles ─────────────────────────────────────────────────────────────────
+function rndR(){const r=Math.random();if(r<.26)return 4+Math.random()*13;if(r<.70)return 19+Math.random()*20;return 39+Math.random()*15;}
+const N=200;
+const pts=Array.from({length:N},(_,i)=>({
+  ang:Math.random()*Math.PI*2, r:rndR(),
+  ecc:(Math.random()-.5)*.08, inc:(Math.random()-.5)*.08,
+  incP:Math.random()*Math.PI*2,
+  spd:(.38+Math.random()*.95)*(Math.random()<.5?1:-1),
+  sz:.5+Math.random()*1.3,
+  hs:(Math.random()-.5)*26,
+  lay:i<N*.25?0:i<N*.72?1:2,
+  dx:0,dy:0,da:Math.random()*Math.PI*2,ds:.5+Math.random()*.8,
+}));
+function perturb(cfg){
+  pts.forEach(p=>{
+    const f=cfg.spread*.018;
+    p.ecc+=(Math.random()-.5)*f*(1+p.lay*.4);
+    p.inc+=(Math.random()-.5)*f*.5;
+    p.ecc=Math.max(-.92,Math.min(.92,p.ecc));
+    p.inc=Math.max(-.9,Math.min(.9,p.inc));
+  });
 }
 
-function setPending(n) {
-  pendingCount = Math.max(0, n);
-  if (pendingCount > 0) {
-    badge.textContent = pendingCount;
-    badge.classList.add('show');
-    wrap.classList.add('pending');
-    pulseRings.classList.add('pending');
-  } else {
-    badge.classList.remove('show');
-    wrap.classList.remove('pending');
-    pulseRings.classList.remove('pending');
-  }
+// ── State ─────────────────────────────────────────────────────────────────────
+let curK='idle',cur={...STATES.idle},tgt={...STATES.idle};
+let curH=THEME.stateHues.idle,tgtH=THEME.stateHues.idle;
+
+function setState(key){
+  key=String(key||'').toLowerCase().trim();
+  if(!STATES[key]||key===curK)return;
+  curK=key; tgt={...STATES[key]};
+  tgtH=THEME.stateHues[key]??tgtH;
+  perturb(tgt);
+  document.getElementById('lbl').textContent=STATES[key].lbl;
+  const d=document.getElementById('sdot');
+  d.style.background=STATES[key].dc;
+  d.style.boxShadow=`0 0 6px ${STATES[key].dg}`;
+  document.getElementById('pill').style.borderColor=STATES[key].dg;
+}
+function applyTheme(name){
+  const t=THEMES[name]; if(!t)return;
+  THEME=t; tgtH=t.stateHues[curK]??tgtH;
 }
 
-// ── Hover expand/collapse ──────────────────────────
-let hoverExpanded = false;
-
-document.addEventListener('mouseenter', () => {
-  if (hoverExpanded || isDragging) return;
-  hoverExpanded = true;
-  strip.classList.add('visible');
-  window.pacify?.orbContextMenu('hover-expand');
-});
-
-document.addEventListener('mouseleave', () => {
-  if (!hoverExpanded) return;
-  hoverExpanded = false;
-  strip.classList.remove('visible');
-  window.pacify?.orbContextMenu('hover-collapse');
-});
-
-// Quick strip buttons
-document.getElementById('qbtn-open').addEventListener('click', e => {
-  e.stopPropagation();
-  window.pacify?.orbContextMenu('open');
-});
-document.getElementById('qbtn-ws').addEventListener('click', e => {
-  e.stopPropagation();
-  window.pacify?.orbContextMenu('workspace');
-});
-document.getElementById('qbtn-exit').addEventListener('click', e => {
-  e.stopPropagation();
-  window.pacify?.orbContextMenu('exit');
-});
-
-// ── Drag / click / double-click ────────────────────
-let isDragging    = false;
-let hasDragged    = false;
-let dragStartX    = 0, dragStartY = 0;
-let holdTimer     = null;
-let clickCount    = 0, clickTimer = null;
-let mouseDownTime = 0;
-
-document.getElementById('orb').addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  isDragging    = false;
-  hasDragged    = false;
-  dragStartX    = e.screenX;
-  dragStartY    = e.screenY;
-  mouseDownTime = Date.now();
-
-  // Hold-to-drag: after 250ms holding without movement, enter drag mode
-  holdTimer = setTimeout(() => {
-    isDragging = true;
-    wrap.classList.add('dragging');
-    window.pacify?.ipc?.send('orb-drag-start', { x: e.screenX, y: e.screenY });
-  }, 250);
-
-  const onMove = me => {
-    const moved = Math.abs(me.screenX - dragStartX) + Math.abs(me.screenY - dragStartY);
-    if (moved > 4) {
-      // Immediate drag if moved significantly (even before hold timer)
-      if (!isDragging) {
-        isDragging = true;
-        hasDragged = true;
-        clearTimeout(holdTimer);
-        wrap.classList.add('dragging');
-        window.pacify?.ipc?.send('orb-drag-start', { x: dragStartX, y: dragStartY });
-      }
-      window.pacify?.ipc?.send('orb-drag-move', { x: me.screenX, y: me.screenY });
+// ── IPC ───────────────────────────────────────────────────────────────────────
+if(api){
+  try{
+    if(api.onAmbientState)api.onAmbientState(d=>{
+      if(!d)return;
+      if(typeof d==='string'){setState(d);return;}
+      if(d.theme){applyTheme(d.theme);return;}
+      setState(d.state||d);
+    });
+    if(api.on){
+      api.on('soul-state',(_,s)=>setState(s));
+      api.on('ambient-state',(_,d)=>{if(d)setState(d.state||d);});
+      api.on('conn-change',(_,ok)=>{document.getElementById('cdot').className='conn'+(ok?'':' off');});
     }
-  };
+  }catch(_){}
+}
+(async()=>{
+  try{const cfg=await api?.getConfig?.();if(cfg?.ui?.theme)applyTheme(cfg.ui.theme);}catch(_){}
+})();
+window.addEventListener('message',e=>{
+  const d=e.data; if(!d)return;
+  if(typeof d==='string'){setState(d);return;}
+  if(d.theme){applyTheme(d.theme);return;}
+  if(d.type==='soul-state')setState(d.state);
+  if(d.type==='ambient-state')setState(d.state||d);
+  if(d.type==='thinking')setState(d.active?'thinking':'idle');
+  if(d.type==='assistant_message')setState('speaking');
+  if(d.type==='user_message')setState('listening');
+  if(d.type==='stream_start')setState('speaking');
+  if(d.type==='stream_end')setTimeout(()=>setState('idle'),800);
+  if(d.type==='idle')setState('idle');
+});
 
-  const onUp = ue => {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup', onUp);
-    clearTimeout(holdTimer);
-    wrap.classList.remove('dragging');
+// ── Buttons ───────────────────────────────────────────────────────────────────
+function doExpand(){
+  if(api?.exitAmbient)api.exitAmbient();
+  else if(api?.setAmbient)api.setAmbient(false);
+  else if(api?.orbContextMenu)api.orbContextMenu('open');
+}
+cv.addEventListener('dblclick',doExpand);
+let eyeOn=true;
+function doEye(){
+  eyeOn=!eyeOn;
+  document.getElementById('btn-eye').classList.toggle('eye-off',!eyeOn);
+  document.getElementById('eye-svg').innerHTML=eyeOn
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  try{api?.sendToMain?.({type:'orb_toggle_screen',enabled:eyeOn});}catch(_){}
+}
 
-    if (isDragging) {
-      window.pacify?.ipc?.send('orb-drag-end');
-      isDragging = false;
-      hasDragged = true;
-      return;
+// ── Render ────────────────────────────────────────────────────────────────────
+// TRANSPARENT TRAIL TECHNIQUE:
+//   Standard approach: fill dark rect → builds opaque black disk
+//   This approach: composite 'destination-out' → REMOVES alpha from old pixels
+//   Result: old particles fade to fully transparent, new ones glow on any desktop
+
+let t=0;
+function frame(){
+  t+=.014;
+  cur=lerpS(cur,tgt,.030); curH=lerp(curH,tgtH,.022);
+  const c=cur,h=curH,s=THEME.s;
+  const sr=SOFT_R*(.88+c.spread*.058);
+
+  // ── Step 1: Fade old frame using destination-out (transparent erosion) ──
+  ctx.save();
+  ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath(); ctx.arc(CX,CY,sr+14,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle=`rgba(0,0,0,${(c.fade*.65).toFixed(3)})`;
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+
+  // ── Step 2: Particles (source-over, normal) ──
+  pts.forEach(p=>{
+    const spd=p.spd*c.speed*.0030; p.ang+=spd;
+    p.da+=(Math.random()-.5)*.22;
+    const df=c.drift*p.ds;
+    p.dx=lerp(p.dx,Math.cos(p.da)*df*p.r,.06);
+    p.dy=lerp(p.dy,Math.sin(p.da)*df*p.r,.06);
+    const re=p.r*(1+p.ecc*Math.cos(p.ang));
+    const iw=Math.sin(p.ang+p.incP)*p.r*Math.abs(p.inc)*.42;
+    const px=CX+Math.cos(p.ang)*re+p.dx;
+    const py=CY+Math.sin(p.ang)*re+iw+p.dy;
+    const d2=(px-CX)**2+(py-CY)**2;
+    const fd=Math.max(0,1-(d2/(sr*sr))); if(fd<.007)return;
+    const lb=p.lay===0?.50:p.lay===1?1:.62;
+    const al=fd*lb*(.30+Math.min(1,Math.abs(p.ecc))*.70)*.92;
+    ctx.beginPath(); ctx.arc(px,py,p.sz*(.68+fd*.52),0,Math.PI*2);
+    ctx.fillStyle=hsla(h+p.hs,s,46+fd*36,al); ctx.fill();
+    const as=Math.abs(spd);
+    if(as>.0016){
+      const tl=as*1100*c.speed*.10,pa=p.ang-spd*tl;
+      const pr2=p.r*(1+p.ecc*Math.cos(pa));
+      const pi2=Math.sin(pa+p.incP)*p.r*Math.abs(p.inc)*.42;
+      ctx.beginPath();
+      ctx.moveTo(CX+Math.cos(pa)*pr2,CY+Math.sin(pa)*pr2+pi2);
+      ctx.lineTo(px,py);
+      ctx.strokeStyle=hsla(h+p.hs,s,66,al*.30); ctx.lineWidth=p.sz*.40; ctx.stroke();
     }
+  });
 
-    // Click — detect double-click
-    clickCount++;
-    if (clickTimer) clearTimeout(clickTimer);
-    clickTimer = setTimeout(() => {
-      if (clickCount >= 2) {
-        // Double click → open main window
-        window.pacify?.orbContextMenu('dblclick');
-      } else {
-        // Single click → open main window (same action)
-        window.pacify?.orbContextMenu('open');
-      }
-      clickCount = 0;
-      clickTimer = null;
-    }, 240);
-  };
+  // ── Step 3: Haze glow ──
+  const hr=sr*.50;
+  const hg=ctx.createRadialGradient(CX,CY,0,CX,CY,hr);
+  hg.addColorStop(0,hsla(h,s,8,c.glow*.50));
+  hg.addColorStop(.55,hsla(h,s,4,c.glow*.16));
+  hg.addColorStop(1,hsla(h,s,0,0));
+  ctx.save(); ctx.beginPath(); ctx.arc(CX,CY,hr,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle=hg; ctx.fillRect(0,0,W,H); ctx.restore();
 
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('mouseup', onUp);
-});
+  // ── Step 4: Core ──
+  const br=Math.sin(t*c.speed*2.0)*.26+.74;
+  const cr=c.coreR*br+Math.sin(t*c.speed*3.5)*1.8;
+  const cg=ctx.createRadialGradient(CX,CY,0,CX,CY,cr*5.2);
+  cg.addColorStop(0,hsla(h,10,98,.94));
+  cg.addColorStop(.10,hsla(h,s,80,.80));
+  cg.addColorStop(.30,hsla(h,s,52,.42));
+  cg.addColorStop(.65,hsla(h,s,30,.12));
+  cg.addColorStop(1,hsla(h,s,0,0));
+  ctx.beginPath(); ctx.arc(CX,CY,cr*5.2,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
 
-// Right click → workspace (no context menu)
-document.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  window.pacify?.orbContextMenu('workspace');
-});
+  // ── Step 5: Specular ──
+  const pg=ctx.createRadialGradient(CX-cr*.20,CY-cr*.20,0,CX,CY,cr*.90);
+  pg.addColorStop(0,'rgba(255,255,255,.85)');
+  pg.addColorStop(.4,'rgba(255,255,255,.22)');
+  pg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath(); ctx.arc(CX,CY,cr*.90,0,Math.PI*2); ctx.fillStyle=pg; ctx.fill();
 
-// ── IPC events from main window ────────────────────
-window.pacify?.onAmbientState?.((msg) => {
-  if (!msg) return;
-  switch (msg.type) {
-    case 'thinking':
-      setState(msg.active ? 'thinking' : 'idle'); break;
-    case 'assistant_message':
-      setState('speaking');
-      setTimeout(() => setState('idle'), 3200);
-      break;
-    case 'user_message':
-      setState('thinking'); break;
-    case 'action_pending':
-      setPending(pendingCount + 1); break;
-    case 'action_result':
-      if (!msg.total || msg.step === msg.total) setPending(Math.max(0, pendingCount - 1));
-      break;
-  }
-});
+  requestAnimationFrame(frame);
+}
+frame();
 </script>
 </body>
 </html>

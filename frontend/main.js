@@ -1,6 +1,7 @@
 /**
  * SOUL — Electron Main Process
  * v6: Workspace panel, fixed ambient, IPC for workspace
+ * v6.1: Packaged-mode backend detection (soul_backend.exe)
  */
 
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage,
@@ -18,7 +19,7 @@ function getConfigPath() {
 
 let mainWindow    = null;
 let workspaceWin  = null;
-let tray          = null;
+// tray: reserved for v2 system tray implementation
 let backendProcess = null;
 let isAmbient     = false;
 
@@ -41,11 +42,16 @@ function waitForPort(port, maxAttempts = 30) {
   });
 }
 
-// ── Env loader ──────────────────────────────────────────
+// ── Env / key loader ────────────────────────────────────
+// Checks (in order):
+//   1. .env next to the exe / in the source tree (dev)
+//   2. userData folder — users drop their .env here after install
+//   3. process.env (system environment variable)
 function loadEnvKey(key) {
   const locations = [
     path.join(__dirname, '..', '.env'),
     path.join(__dirname, '.env'),
+    path.join(app.getPath('userData'), '.env'),   // packaged: user drops .env here
   ];
   for (const p of locations) {
     if (fs.existsSync(p)) {
@@ -62,39 +68,64 @@ async function startBackend() {
     console.log('[SOUL] Backend already running, attaching...');
     return true;
   }
-  const py = process.platform === 'win32' ? 'python' : 'python3';
-  const backendPath = path.join(__dirname, '..', 'backend', 'main.py');
-  console.log('[SOUL] Starting backend:', backendPath);
 
-  backendProcess = spawn(py, [backendPath], {
-    env: {
-      ...process.env,
-      GROQ_API_KEY:        loadEnvKey('GROQ_API_KEY'),
-      PORCUPINE_KEY:       loadEnvKey('PORCUPINE_KEY'),
-      SOUL_DATA_DIR:       app.getPath('userData'),
-      PYTHONUTF8:          '1',          // force UTF-8 on Windows terminals
-      PYTHONIOENCODING:    'utf-8',      // prevent cp1252 crashes
-    },
-    cwd: path.join(__dirname, '..', 'backend')
-  });
+  const userData = app.getPath('userData');
+  const envVars = {
+    ...process.env,
+    GROQ_API_KEY:       loadEnvKey('GROQ_API_KEY'),
+    PORCUPINE_KEY:      loadEnvKey('PORCUPINE_KEY'),
+    SOUL_DATA_DIR:      userData,
+    PYTHONUTF8:         '1',
+    PYTHONIOENCODING:   'utf-8',
+  };
+
+  if (app.isPackaged) {
+    // ── Packaged mode: launch the frozen soul_backend.exe ──
+    // electron-builder copies it to resources/backend/soul_backend.exe
+    const exePath = path.join(process.resourcesPath, 'backend', 'soul_backend.exe');
+    console.log('[SOUL] Packaged mode — launching:', exePath);
+
+    if (!fs.existsSync(exePath)) {
+      console.error('[SOUL] soul_backend.exe not found at:', exePath);
+      return false;
+    }
+
+    backendProcess = spawn(exePath, [], {
+      env: envVars,
+      cwd: path.join(process.resourcesPath, 'backend'),
+      // detached: false so it dies with Electron
+    });
+  } else {
+    // ── Dev mode: launch via python ──────────────────────
+    const py = process.platform === 'win32' ? 'python' : 'python3';
+    const backendPath = path.join(__dirname, '..', 'backend', 'main.py');
+    console.log('[SOUL] Dev mode — starting backend:', backendPath);
+
+    backendProcess = spawn(py, [backendPath], {
+      env: envVars,
+      cwd: path.join(__dirname, '..', 'backend'),
+    });
+  }
 
   backendProcess.stdout.on('data', d => {
     const txt = d.toString().trim();
     console.log(`[Backend] ${txt}`);
-    // Forward backend logs to workspace if open
     workspaceWin?.webContents.send('backend-log', txt);
   });
   backendProcess.stderr.on('data', d => console.log(`[Backend] ${d.toString().trim()}`));
   backendProcess.on('close', code => {
     if (code !== 0 && mainWindow)
-      mainWindow.webContents.send('backend-error', 'Backend stopped. Check your .env GROQ_API_KEY.');
+      mainWindow.webContents.send('backend-error', 'Backend stopped. Check your GROQ_API_KEY.');
   });
 
   return await waitForPort(BACKEND_PORT);
 }
 
 function stopBackend() {
-  if (backendProcess) { backendProcess.kill(); backendProcess = null; }
+  if (backendProcess) {
+    backendProcess.kill();
+    backendProcess = null;
+  }
 }
 
 // ── Main Window ─────────────────────────────────────────
@@ -172,7 +203,7 @@ function createWorkspaceWindow() {
     resizable: false,
     show: false,
     roundedCorners: true,
-    x: mainBounds.x - 492,  // snaps to the left of main window
+    x: mainBounds.x - 492,
     y: Math.max(0, mainBounds.y - 40),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -206,18 +237,16 @@ function enterAmbient() {
   if (!mainWindow) return;
   isAmbient = true;
 
-  // Create the orb window
   const { screen } = require('electron');
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
   const mb = mainWindow.getBounds();
 
-  // Spawn orb at bottom-right of screen with padding
-  const orbSize = 100;
+  const orbSize = 160;
   const orbX = width - orbSize - 24;
-  const orbY = height - 160 - 24; /* 160 = orb(100) + strip(60) */
+  const orbY = height - 220 - 24; /* 220 = orb(160) + strip(56) */
 
   orbWindow = new BrowserWindow({
-    width: orbSize, height: 160, /* extra height for quick-strip */
+    width: orbSize, height: 220,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -237,13 +266,10 @@ function enterAmbient() {
   orbWindow.loadFile(path.join(__dirname, 'renderer', 'ambient.html'));
   orbWindow.webContents.on('did-finish-load', () => {
     orbWindow?.show();
-    // On Windows, setIgnoreMouseEvents with forward:true lets transparent pixels
-    // pass mouse events to windows below while orb content still receives events
     orbWindow?.setIgnoreMouseEvents(false);
   });
   orbWindow.on('closed', () => { orbWindow = null; });
 
-  // Hide main + workspace
   mainWindow.hide();
   workspaceWin?.hide();
 }
@@ -294,13 +320,47 @@ ipcMain.handle('reset-config', () => {
   if (fs.existsSync(p)) fs.unlinkSync(p);
   return true;
 });
-ipcMain.on('window-close', () => mainWindow?.hide());
+ipcMain.handle('reset-all', async () => {
+  try {
+    // 1. Tell backend to wipe its config + memory DB + in-memory state
+    const r = await fetch(`http://127.0.0.1:${BACKEND_PORT}/reset`, { method: 'POST' });
+    const data = await r.json();
+
+    // 2. Also wipe Electron-side config (userData/config.json)
+    const p = getConfigPath();
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+
+    // 3. Reload main window to onboarding
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const onboardPath = path.join(__dirname, 'renderer', 'onboarding.html');
+      mainWindow.loadFile(onboardPath);
+    }
+
+    // 4. Close workspace if open
+    workspaceWin?.close();
+
+    console.log('[SOUL] Full reset complete:', data);
+    return { success: true };
+  } catch (e) {
+    console.error('[SOUL] reset-all failed:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+ipcMain.handle('open-file-dialog', async () => {
+  const { dialog } = require('electron');
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    title: 'Select File'
+  });
+  return result.canceled ? null : result.filePaths[0];
+});
+ipcMain.on('window-close',    () => mainWindow?.hide());
 ipcMain.on('window-minimize', () => mainWindow?.minimize());
-ipcMain.on('open-external', (_, url) => shell.openExternal(url));
-ipcMain.on('set-ambient', (_, on) => on ? enterAmbient() : exitAmbient());
-ipcMain.on('toggle-workspace',  () => toggleWorkspace());
-ipcMain.on('exit-ambient',      () => exitAmbient());
-ipcMain.on('close-workspace', () => workspaceWin?.close());
+ipcMain.on('open-external',   (_, url) => shell.openExternal(url));
+ipcMain.on('set-ambient',     (_, on) => on ? enterAmbient() : exitAmbient());
+ipcMain.on('toggle-workspace', () => toggleWorkspace());
+ipcMain.on('exit-ambient',     () => exitAmbient());
+ipcMain.on('close-workspace',  () => workspaceWin?.close());
 
 // Orb manual drag handlers
 let dragOffset = { x: 0, y: 0 };
@@ -311,20 +371,16 @@ ipcMain.on('orb-drag-start', (_, data) => {
 });
 ipcMain.on('orb-drag-move', (_, data) => {
   if (!orbWindow || orbWindow.isDestroyed()) return;
-  const newX = data.x - dragOffset.x;
-  const newY = data.y - dragOffset.y;
-  orbWindow.setPosition(newX, newY, false);
+  orbWindow.setPosition(data.x - dragOffset.x, data.y - dragOffset.y, false);
 });
-ipcMain.on('orb-drag-end', () => {
-  dragOffset = { x: 0, y: 0 };
-});
+ipcMain.on('orb-drag-end', () => { dragOffset = { x: 0, y: 0 }; });
 
-// Relay main window events -> orb
+// Relay main window events → orb
 ipcMain.on('orb-event', (_, data) => {
   orbWindow?.webContents.send('ambient-state', data);
 });
 
-// Orb resize (expand on hover)
+// Orb resize
 ipcMain.on('orb-resize', (_, w, h) => {
   if (!orbWindow || orbWindow.isDestroyed()) return;
   const bounds = orbWindow.getBounds();
@@ -335,11 +391,9 @@ ipcMain.on('orb-resize', (_, w, h) => {
 ipcMain.on('orb-context', (_, action) => {
   if (!orbWindow || orbWindow.isDestroyed()) return;
   const b = orbWindow.getBounds();
-
   if (action === 'open' || action === 'dblclick') {
     exitAmbient();
   } else if (action === 'workspace') {
-    // Right click = open workspace without exiting ambient
     exitAmbient();
     setTimeout(() => toggleWorkspace(), 180);
   } else if (action === 'exit') {
@@ -347,22 +401,29 @@ ipcMain.on('orb-context', (_, action) => {
   } else if (action === 'screenshot') {
     mainWindow?.webContents.send('shortcut', 'screenshot');
   } else if (action === 'hover-expand') {
-    // Expand downward to show quick buttons strip
-    orbWindow.setBounds({ x: b.x, y: b.y, width: 100, height: 160 }, false);
+    orbWindow.setBounds({ x: b.x, y: b.y, width: 160, height: 220 }, false);
   } else if (action === 'hover-collapse') {
-    orbWindow.setBounds({ x: b.x, y: b.y, width: 100, height: 160 }, false);
+    orbWindow.setBounds({ x: b.x, y: b.y, width: 160, height: 220 }, false);
   } else if (action === 'close-menu') {
-    orbWindow.setBounds({ x: b.x, y: b.y, width: 100, height: 160 }, false);
+    orbWindow.setBounds({ x: b.x, y: b.y, width: 160, height: 220 }, false);
   }
 });
-// Relay workspace messages from main UI → workspace window
+
+// Relay workspace events
 ipcMain.on('workspace-event', (_, data) => {
   workspaceWin?.webContents.send('workspace-event', data);
 });
-// Relay workspace→main messages to the main window renderer
+
+// workspace → main (single handler — deduplicated from v6 which had two)
 ipcMain.on('workspace-to-main', (_, data) => {
   if (data.type === 'open_external' && data.url) {
     shell.openExternal(data.url);
+    return;
+  }
+  if (data.type === 'theme_change' && data.theme) {
+    mainWindow?.webContents.send('shortcut', `theme:${data.theme}`);
+    mainWindow?.webContents.send('workspace-to-main', data);
+    orbWindow?.webContents.send('ambient-state', { theme: data.theme });
     return;
   }
   mainWindow?.webContents.send('workspace-to-main', data);
@@ -371,20 +432,24 @@ ipcMain.on('workspace-to-main', (_, data) => {
 // ── Lifecycle ────────────────────────────────────────────
 app.whenReady().then(async () => {
   console.log('[SOUL] userData:', app.getPath('userData'));
+  console.log('[SOUL] packaged:', app.isPackaged);
   await startBackend();
   createMainWindow();
   registerShortcuts();
   app.on('activate', () => { if (!mainWindow) createMainWindow(); });
 });
 
-app.on('will-quit', () => { globalShortcut.unregisterAll(); stopBackend(); });
-app.on('before-quit', () => stopBackend());
+app.on('will-quit',    () => { globalShortcut.unregisterAll(); stopBackend(); });
+app.on('before-quit',  () => stopBackend());
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.focus(); }
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
   });
 }

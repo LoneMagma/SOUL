@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,13 +6,51 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap');
 :root {
-  --bg:#06080d; --s1:rgba(255,255,255,.03); --b1:rgba(255,255,255,.065);
-  --acc:#8b7cf8; --as:rgba(139,124,248,.1); --ab:rgba(139,124,248,.35);
+  /* ── Midnight (default) ── */
+  --bg:#06080d; --bg2:#0e1018;
+  --s1:rgba(255,255,255,.030); --s2:rgba(255,255,255,.055);
+  --b1:rgba(255,255,255,.065); --b2:rgba(255,255,255,.110);
+  --acc:#8b7cf8;
+  --as:var(--as); --am:rgba(139,124,248,.05);
+  --ab:var(--ab); --ab2:rgba(139,124,248,.55);
+  --glow:rgba(139,124,248,.24); --glow-sm:var(--glow-sm);
   --text:#ddd8f3; --dim:rgba(221,216,243,.34); --dim2:rgba(221,216,243,.62);
   --green:#4de89c; --gs:rgba(77,232,156,.08); --gb:rgba(77,232,156,.28);
-  --red:#ee6e6e; --rs:rgba(238,110,110,.07); --rb:rgba(238,110,110,.22);
-  --warn:#f5bf5a; --ws:rgba(245,191,90,.07); --wb:rgba(245,191,90,.22);
-  --blue:#60a5fa; --bs:rgba(96,165,250,.07); --bb:rgba(96,165,250,.22);
+  --red:#ee6e6e;   --rs:rgba(238,110,110,.07); --rb:rgba(238,110,110,.22);
+  --warn:#f5bf5a;  --ws:rgba(245,191,90,.07);  --wb:rgba(245,191,90,.22);
+  --blue:#60a5fa;  --bs:rgba(96,165,250,.07);  --bb:rgba(96,165,250,.22);
+}
+
+/* ── Terminal ─────────────────────────────────────────────── */
+[data-theme="terminal"] {
+  --bg:#0d1117; --bg2:#161b22;
+  --s1:rgba(255,255,255,.040); --s2:rgba(255,255,255,.065);
+  --b1:rgba(255,255,255,.080); --b2:rgba(255,255,255,.130);
+  --acc:#3fb950;
+  --as:rgba(63,185,80,.12);  --am:rgba(63,185,80,.05);
+  --ab:rgba(63,185,80,.38);  --ab2:rgba(63,185,80,.58);
+  --glow:rgba(63,185,80,.26); --glow-sm:rgba(63,185,80,.15);
+  --text:#e6edf3; --dim:rgba(230,237,243,.38); --dim2:rgba(230,237,243,.65);
+  --green:#3fb950; --gs:rgba(63,185,80,.08);  --gb:rgba(63,185,80,.28);
+  --red:#f85149;   --rs:rgba(248,81,73,.07);   --rb:rgba(248,81,73,.22);
+  --warn:#d29922;  --ws:rgba(210,153,34,.07);  --wb:rgba(210,153,34,.22);
+  --blue:#39c5cf;  --bs:rgba(57,197,207,.07);  --bb:rgba(57,197,207,.22);
+}
+
+/* ── Paper ─────────────────────────────────────────────────── */
+[data-theme="paper"] {
+  --bg:#f5f0e8; --bg2:#ede8df;
+  --s1:rgba(0,0,0,.040); --s2:rgba(0,0,0,.070);
+  --b1:rgba(0,0,0,.090); --b2:rgba(0,0,0,.160);
+  --acc:#7c6af0;
+  --as:rgba(124,106,240,.10); --am:rgba(124,106,240,.05);
+  --ab:rgba(124,106,240,.35); --ab2:rgba(124,106,240,.55);
+  --glow:rgba(124,106,240,.20); --glow-sm:rgba(124,106,240,.12);
+  --text:#1a1825; --dim:rgba(26,24,37,.42); --dim2:rgba(26,24,37,.68);
+  --green:#16a34a; --gs:rgba(22,163,74,.08);   --gb:rgba(22,163,74,.28);
+  --red:#dc2626;   --rs:rgba(220,38,38,.07);    --rb:rgba(220,38,38,.22);
+  --warn:#ca8a04;  --ws:rgba(202,138,4,.07);    --wb:rgba(202,138,4,.22);
+  --blue:#2563eb;  --bs:rgba(37,99,235,.07);    --bb:rgba(37,99,235,.22);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{font-family:'Syne',sans-serif;background:transparent;color:var(--text);
@@ -99,7 +137,7 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 .msg-role.soul{color:var(--acc)}
 .msg-bubble{font-size:11.5px;line-height:1.55;padding:8px 11px;border-radius:10px;
   background:var(--s1);border:1px solid var(--b1);color:var(--text)}
-.msg-bubble.soul{background:var(--as);border-color:rgba(139,124,248,.18);color:var(--dim2);border-radius:10px 10px 10px 3px}
+.msg-bubble.soul{background:var(--as);border-color:var(--glow-sm);color:var(--dim2);border-radius:10px 10px 10px 3px}
 .msg-bubble.user{border-radius:10px 10px 3px 10px}
 .msg-bubble.step{opacity:.55;font-size:10.5px;font-style:italic;background:transparent;border-color:transparent;padding:2px 4px}
 .think-row{display:flex;align-items:center;gap:6px;padding:4px;animation:pop .15s ease both}
@@ -114,6 +152,7 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 ──────────────────────────────────────────── */
 .planner{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .planner::-webkit-scrollbar{width:2px}
+.planner::-webkit-scrollbar-thumb{background:rgba(255,255,255,.05)}
 .planner-empty{font-size:11px;color:var(--dim);text-align:center;padding:32px 0}
 .task-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;
   padding:12px 14px;animation:pop .16s ease both}
@@ -137,19 +176,7 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 /* ────────────────────────────────────────────
    QUEUE PANEL
 ──────────────────────────────────────────── */
-.q-list{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
-.q-empty{font-size:11px;color:var(--dim);text-align:center;padding:32px 0}
-.qcard{background:var(--ws);border:1px solid var(--wb);border-radius:11px;
-  padding:12px 14px;animation:pop .16s ease both}
-.qcard-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.qcard-txt{font-size:12px;color:var(--text);flex:1;line-height:1.4}
-.qcard-timer{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex-shrink:0}
-.qcard-btns{display:flex;gap:6px}
-.qb{font-size:10px;font-weight:700;padding:5px 14px;border-radius:7px;
-  border:none;cursor:pointer;font-family:'Syne',sans-serif;transition:all .12s;flex:1}
-.qb-ok{background:var(--gs);border:1px solid var(--gb);color:var(--green)}
-.qb-no{background:var(--rs);border:1px solid var(--rb);color:var(--red)}
-.qb-ok:hover{background:rgba(77,232,156,.18)}.qb-no:hover{background:rgba(238,110,110,.16)}
+
 
 /* ────────────────────────────────────────────
    LOG PANEL
@@ -172,7 +199,7 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 .le.err{background:rgba(238,110,110,.04);border-color:rgba(238,110,110,.1)}
 .le.act{background:rgba(245,191,90,.04);border-color:rgba(245,191,90,.1)}
 .le.inf{background:var(--s1)}
-.le.auto{background:rgba(139,124,248,.03);border-color:rgba(139,124,248,.08)}
+.le.auto{background:var(--am);border-color:var(--am)}
 .le-icon{font-size:10px;flex-shrink:0;margin-top:1px;width:12px;text-align:center;font-family:'JetBrains Mono',monospace}
 .le-body{flex:1;min-width:0}
 .le-text{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text);line-height:1.4;word-break:break-word}
@@ -182,7 +209,10 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 /* ────────────────────────────────────────────
    SETTINGS PANEL
 ──────────────────────────────────────────── */
-.settings-body{flex:1;overflow-y:auto;padding:14px}
+.settings-body{flex:1;overflow-y:auto;padding:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent}
+.settings-body::-webkit-scrollbar{width:2px}
+.settings-body::-webkit-scrollbar-track{background:transparent}
+.settings-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
 .slbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);margin-bottom:8px;display:block}
 .tier-row{display:flex;gap:6px;margin-bottom:16px}
@@ -204,6 +234,18 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
   border-radius:50%;background:white;transition:left .2s}
 .toggle.on::after{left:16px}
 
+/* ── Theme picker ── */
+.theme-row{display:flex;gap:6px;margin-bottom:16px}
+.theme-opt{flex:1;padding:8px 6px;border-radius:10px;background:var(--s1);
+  border:1px solid var(--b1);cursor:pointer;transition:all .13s;
+  text-align:center;font-size:9.5px;font-weight:700;color:var(--dim2)}
+.theme-opt:hover{border-color:var(--ab)}
+.theme-opt.on{background:var(--as);border-color:var(--ab);color:var(--acc)}
+.theme-swatch{display:flex;gap:3px;justify-content:center;margin-bottom:5px}
+.ts-bg{width:18px;height:14px;border-radius:4px;background:var(--bg);
+  border:1px solid var(--b2)}
+.ts-acc{width:8px;height:14px;border-radius:4px;background:var(--acc)}
+
 /* ── Bottom ── */
 .bottom{height:36px;border-top:1px solid var(--b1);display:flex;align-items:center;
   justify-content:space-between;padding:0 14px;flex-shrink:0}
@@ -212,8 +254,8 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 .hint{font-size:8px;color:var(--dim);letter-spacing:.08em}
 /* ── Shortcuts ── */
 .shortcut-list{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
-.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:7px;background:rgba(139,124,248,.03);border:1px solid rgba(139,124,248,.07)}
-.shortcut-key{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;color:var(--acc);background:rgba(139,124,248,.1);padding:2px 6px;border-radius:4px;white-space:nowrap}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:7px;background:var(--am);border:1px solid var(--am)}
+.shortcut-key{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;color:var(--acc);background:var(--as);padding:2px 6px;border-radius:4px;white-space:nowrap}
 .shortcut-desc{font-size:10px;color:var(--dim2);text-align:right}
 
 /* ── About panel ── */
@@ -242,8 +284,8 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
   cursor:pointer;transition:all .14s;-webkit-app-region:no-drag}
 .about-link:hover{border-color:var(--ab);color:var(--text);background:var(--as)}
 .about-link-left{display:flex;align-items:center;gap:9px}
-.about-link-icon{width:20px;height:20px;border-radius:6px;background:rgba(139,124,248,.1);
-  border:1px solid rgba(139,124,248,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.about-link-icon{width:20px;height:20px;border-radius:6px;background:var(--as);
+  border:1px solid var(--glow-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .about-link-url{font-size:8.5px;color:var(--dim);margin-top:1px;font-family:"JetBrains Mono",monospace}
 .about-link-arr{font-size:10px;color:var(--dim);transition:color .14s}
 .about-link:hover .about-link-arr{color:var(--acc)}
@@ -258,11 +300,11 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 .stack-chip-role{font-size:8.5px;color:var(--dim);line-height:1.4;margin-top:1px}
 
 /* Credit block */
-.about-credit{padding:10px 12px;border-radius:10px;background:rgba(139,124,248,.04);
-  border:1px solid rgba(139,124,248,.14)}
+.about-credit{padding:10px 12px;border-radius:10px;background:var(--am);
+  border:1px solid var(--glow-sm)}
 .about-credit-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .about-credit-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);
-  box-shadow:0 0 6px rgba(139,124,248,.6)}
+  box-shadow:0 0 6px var(--glow)}
 .about-credit-name{font-size:11px;font-weight:700;color:var(--acc)}
 .about-credit-role{font-size:9px;color:var(--dim2);line-height:1.5}
 
@@ -291,10 +333,7 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
       Tasks
       <span class="tbadge" id="plan-badge"></span>
     </div>
-    <div class="tab"    id="tab-queue"    onclick="showTab('queue')">
-      Queue
-      <span class="tbadge" id="q-badge"></span>
-    </div>
+
     <div class="tab"    id="tab-log"      onclick="showTab('log')">Log</div>
     <div class="tab"    id="tab-settings" onclick="showTab('settings')">Settings</div>
     <div class="tab"    id="tab-about"    onclick="showTab('about')">About</div>
@@ -326,12 +365,6 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
     </div>
   </div>
 
-  <!-- QUEUE -->
-  <div class="panel" id="panel-queue">
-    <div class="q-list" id="q-list">
-      <div class="q-empty" id="q-empty">No pending confirmations</div>
-    </div>
-  </div>
 
   <!-- LOG -->
   <div class="panel" id="panel-log">
@@ -387,6 +420,31 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
         <div class="shortcut-row"><span class="shortcut-key">Right-click orb</span><span class="shortcut-desc">Open workspace</span></div>
       </div>
 
+      <span class="slbl">Appearance</span>
+      <div class="theme-row">
+        <div class="theme-opt midnight on" id="th-midnight" onclick="setTheme('midnight')">
+          <div class="theme-swatch">
+            <div class="ts-bg"></div>
+            <div class="ts-acc"></div>
+          </div>
+          <span>Midnight</span>
+        </div>
+        <div class="theme-opt terminal" id="th-terminal" onclick="setTheme('terminal')">
+          <div class="theme-swatch">
+            <div class="ts-bg" style="background:#0d1117"></div>
+            <div class="ts-acc" style="background:#3fb950"></div>
+          </div>
+          <span>Terminal</span>
+        </div>
+        <div class="theme-opt paper" id="th-paper" onclick="setTheme('paper')">
+          <div class="theme-swatch">
+            <div class="ts-bg" style="background:#f5f0e8"></div>
+            <div class="ts-acc" style="background:#7c6af0"></div>
+          </div>
+          <span>Paper</span>
+        </div>
+      </div>
+
       <span class="slbl">Debug</span>
       <div class="setting-row" style="cursor:pointer" onclick="exportLog()">
         <div>
@@ -406,7 +464,73 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
       <div class="about-hero">
         <div class="about-hero-name">SOUL</div>
         <div class="about-hero-sub">Device Companion &nbsp;·&nbsp; Always-On AI</div>
-        <div class="about-hero-ver">V1.3 Beta</div>
+        <div class="about-hero-ver">V1.6 Beta</div>
+      </div>
+
+      <!-- What's New v1.6 -->
+      <div class="about-section">
+        <div class="about-section-label">What's New in v1.6</div>
+        <div class="about-stack">
+          <div class="stack-chip">
+            <span class="stack-chip-name">Multi-Step Actions Fixed</span>
+            <span class="stack-chip-role">_UWP NameError resolved -- open + focus + type sequences execute reliably end-to-end</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Screen Toggle Fixed</span>
+            <span class="stack-chip-role">Settings screen capture switch now correctly reaches the backend -- eyes actually turn on/off</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Workspace Live Feed</span>
+            <span class="stack-chip-role">Streamed responses now appear in the workspace live feed -- operator view is no longer silent</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Memory Persistence</span>
+            <span class="stack-chip-role">DB now saves to the correct user data directory in packaged builds -- no session amnesia after install</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Context-Aware Vision</span>
+            <span class="stack-chip-role">Proactive observations include recent conversation context -- no redundant comments on her own actions</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Wake Cooldown</span>
+            <span class="stack-chip-role">2-minute cooldown on wake greeting -- reconnects no longer trigger a repeated hello</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Queue Tab Removed</span>
+            <span class="stack-chip-role">Confirmations surface inline in the Live feed -- no disruptive tab switches mid-task</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- What's New v1.5 -->
+      <div class="about-section">
+        <div class="about-section-label">What's New in v1.5</div>
+        <div class="about-stack">
+          <div class="stack-chip">
+            <span class="stack-chip-name">Action Feedback Loop</span>
+            <span class="stack-chip-role">SOUL now receives real success/fail results for every action — no more false "it's open" responses</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Streaming Animation</span>
+            <span class="stack-chip-role">Responses now stream token-by-token with natural pacing — no more instant all-at-once drops</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Vision Fix</span>
+            <span class="stack-chip-role">Screen capture now auto-resizes before sending — eliminates 400 errors from oversized screenshots</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">type_text Window Fix</span>
+            <span class="stack-chip-role">Text now pastes into the target app, not SOUL's own input — 5-retry focus verification loop</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Virtual Workdesk (scaffold)</span>
+            <span class="stack-chip-role">Infrastructure for SOUL's own virtual desktop — full separation from user workspace in v2</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Self-Knowledge</span>
+            <span class="stack-chip-role">SOUL now knows her own tech stack and version — no more fabricated "TensorFlow / Django" answers</span>
+          </div>
+        </div>
       </div>
 
       <!-- Creator -->
@@ -428,30 +552,18 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
         </div>
       </div>
 
-      <!-- Repository -->
+      <!-- Source -->
       <div class="about-section">
         <div class="about-section-label">Source</div>
         <div class="about-links">
-          <div class="about-link" onclick="openLink('https://github.com/LoneMagma/SOUL')">
+          <div class="about-link" onclick="openLink('https://pacify.site')">
             <div class="about-link-left">
               <div class="about-link-icon">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </div>
               <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text)">LoneMagma / SOUL</div>
-                <div class="about-link-url">github.com/LoneMagma/SOUL</div>
-              </div>
-            </div>
-            <span class="about-link-arr">↗</span>
-          </div>
-          <div class="about-link" onclick="openLink('https://github.com/LoneMagma')">
-            <div class="about-link-left">
-              <div class="about-link-icon">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.089-.744.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text)">@LoneMagma</div>
-                <div class="about-link-url">github.com/LoneMagma</div>
+                <div style="font-size:11px;font-weight:700;color:var(--text)">pacify.site</div>
+                <div class="about-link-url">Official site &amp; downloads</div>
               </div>
             </div>
             <span class="about-link-arr">↗</span>
@@ -465,27 +577,42 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
         <div class="about-stack">
           <div class="stack-chip">
             <span class="stack-chip-name">Electron</span>
-            <span class="stack-chip-role">Desktop shell, transparent windows, IPC bridge</span>
+            <span class="stack-chip-role">Desktop shell — transparent windows, IPC bridge, system tray</span>
           </div>
           <div class="stack-chip">
-            <span class="stack-chip-name">FastAPI</span>
-            <span class="stack-chip-role">Python backend, WebSocket event bus, REST endpoints</span>
+            <span class="stack-chip-name">Python + FastAPI</span>
+            <span class="stack-chip-role">Backend brain — WebSocket event bus, REST endpoints, action executor</span>
           </div>
           <div class="stack-chip">
             <span class="stack-chip-name">Groq API</span>
-            <span class="stack-chip-role">LLM inference — llama-3.3-70b + vision</span>
-          </div>
-          <div class="stack-chip">
-            <span class="stack-chip-name">Pillow</span>
-            <span class="stack-chip-role">Screen capture, thumbnail pipeline</span>
+            <span class="stack-chip-role">LLM inference — Llama 3.3 70B (chat) + vision model (screen)</span>
           </div>
           <div class="stack-chip">
             <span class="stack-chip-name">SQLite</span>
-            <span class="stack-chip-role">Persistent memory, pattern engine, key facts</span>
+            <span class="stack-chip-role">Persistent memory — cross-session recall, key facts, conversation patterns</span>
           </div>
           <div class="stack-chip">
             <span class="stack-chip-name">psutil</span>
-            <span class="stack-chip-role">System stats, process monitoring</span>
+            <span class="stack-chip-role">Machine awareness — processes, CPU, RAM, battery, disk</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Pillow</span>
+            <span class="stack-chip-role">Screen capture pipeline — thumbnail resize, vision preprocessing</span>
+          </div>
+          <div class="stack-chip">
+            <span class="stack-chip-name">Canvas Renderer</span>
+            <span class="stack-chip-role">Particle orb — ambient visual presence, theme-synced glow</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vision / Roadmap -->
+      <div class="about-section">
+        <div class="about-section-label">Roadmap</div>
+        <div class="about-stack">
+          <div class="stack-chip">
+            <span class="stack-chip-name" style="color:var(--acc)">v2 — Voice + Workdesk</span>
+            <span class="stack-chip-role">Voice module (Whisper STT) · Ambient-only mode · SOUL's own virtual desktop · No chat window needed</span>
           </div>
         </div>
       </div>
@@ -499,12 +626,12 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
             <span class="about-credit-name">Claude AI — Anthropic</span>
           </div>
           <div class="about-credit-role">
-            Coding assistant. Used for code generation, debugging, architecture review, and implementation across the backend and frontend during development.
+            Primary coding assistant throughout development — architecture, debugging, implementation, and all six v1.5 bug fixes.
           </div>
         </div>
       </div>
 
-      <div class="about-footer">Open Source &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; V1.3 Beta</div>
+      <div class="about-footer">Open Source &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; V1.6 Beta</div>
     </div>
   </div>
 
@@ -520,7 +647,15 @@ body{animation:slide .22s cubic-bezier(.16,1,.3,1) both}
 
 </div>
 <script>
-let tier='standard', pendingQ={}, curTab='live', activePlan=null, taskPlans=[];
+// load active theme
+window.pacify?.getConfig?.().then(cfg => {
+  const t = cfg?.ui?.theme || 'midnight';
+  document.querySelectorAll('.theme-opt').forEach(e => e.classList.remove('on'));
+  document.getElementById('th-' + t)?.classList.add('on');
+  document.documentElement.setAttribute('data-theme', t === 'midnight' ? '' : t);
+});
+
+let tier='standard', curTab='live', activePlan=null, taskPlans=[];
 
 // ── Tabs ──────────────────────────────────────
 function showTab(t) {
@@ -675,28 +810,6 @@ function updatePlanBadge() {
   else badge.classList.remove('show');
 }
 
-// ── Queue ─────────────────────────────────────
-function updateQBadge() {
-  const count = Object.keys(pendingQ).length;
-  const badge = document.getElementById('q-badge');
-  if (count>0){ badge.textContent=count; badge.classList.add('show'); }
-  else badge.classList.remove('show');
-}
-
-function addQCard(id, txt) {
-  document.getElementById('q-empty')?.remove();
-  const list=document.getElementById('q-list');
-  const el=document.createElement('div'); el.className='qcard'; el.id=`q-${id}`;
-  let s=29;
-  el.innerHTML=`<div class="qcard-top"><span style="font-size:12px">!</span><span class="qcard-txt">${esc(txt)}</span><span class="qcard-timer" id="qt-${id}">${s}s</span></div><div class="qcard-btns"><button class="qb qb-ok" onclick="qOk('${id}')">Accept</button><button class="qb qb-no" onclick="qNo('${id}')">Cancel</button></div>`;
-  list.appendChild(el); updateQBadge();
-  if (curTab==='live') showTab('queue');
-  const iv=setInterval(()=>{s--;const t=document.getElementById(`qt-${id}`);if(!t){clearInterval(iv);return;}if(s<=0){clearInterval(iv);rmQ(id);addLog('inf','-',`Timed out: ${txt.slice(0,40)}`);}else{t.textContent=`${s}s`;if(s<=10)t.style.color='var(--red)';}},1000);
-  pendingQ[id]={iv,txt};
-}
-function rmQ(id){clearInterval(pendingQ[id]?.iv);delete pendingQ[id];document.getElementById(`q-${id}`)?.remove();if(!document.querySelector('.qcard')){document.getElementById('q-list').innerHTML='<div class="q-empty" id="q-empty">No pending confirmations</div>';if(curTab==='queue')showTab('live');}updateQBadge();}
-function qOk(id){window.pacify?.sendToMain({type:'action_confirm_from_workspace',action_id:id});addLog('act','>',`Confirmed: ${pendingQ[id]?.txt?.slice(0,50)||id}`);setPill('active');rmQ(id);}
-function qNo(id){window.pacify?.sendToMain({type:'action_reject_from_workspace',action_id:id});addLog('inf','-',`Cancelled: ${pendingQ[id]?.txt?.slice(0,50)||id}`);rmQ(id);}
 
 // ── Log ───────────────────────────────────────
 function addLog(type, icon, text) {
@@ -724,6 +837,23 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 // ── Last user message for planner trigger ────
 let lastUserMsg = '';
+// Stale plan watchdog -- force-closes activePlan if no action_result arrives within 10s
+let _planWatchdog = null;
+function _resetPlanWatchdog() {
+  if (_planWatchdog) { clearTimeout(_planWatchdog); }
+  _planWatchdog = setTimeout(function() {
+    if (activePlan) {
+      activePlan.steps.forEach(function(s) {
+        if (s.status === 'running' || s.status === 'pending') { s.status = 'failed'; }
+      });
+      renderPlan(activePlan);
+      activePlan = null;
+      updatePlanBadge();
+      setPill('idle');
+      addLog('inf', '-', 'Plan closed (watchdog)');
+    }
+  }, 10000);
+}
 
 // ── Event handler ─────────────────────────────
 function handle(msg) {
@@ -748,7 +878,15 @@ function handle(msg) {
       addLog('inf','<',(msg.text||'').slice(0,70));
       break;
 
+    case 'stream_end':
+      hideThinking();
+      if (msg.text) addToFeed('soul', msg.text);
+      setPill('idle');
+      addLog('inf','<',(msg.text||'').slice(0,70));
+      break;
+
     case 'action_step': {
+      _resetPlanWatchdog();
       // Initialize plan on first step
       if (msg.step === 1 && msg.total > 1) {
         startPlan(lastUserMsg || 'Task');
@@ -786,21 +924,24 @@ function handle(msg) {
         renderPlan(activePlan);
       }
       addLog('act','!',msg.display_text);
-      addQCard(msg.action_id, msg.display_text);
       setPill('active');
       break;
 
     case 'action_result': {
       const r=msg.result||{};
       const isLast=!msg.total||msg.step===msg.total;
-      // Update last running step
+      // Chain broke early: failed non-auto result that is not the declared last step.
+      // main.py breaks the action loop and sends no further action_result,
+      // so isLast is never true -- activePlan leaks and blocks all future task cards.
+      const chainBroken = !isLast && !r.success && !r.auto && !r.cancelled;
       if (activePlan) {
         const running = activePlan.steps.find(s=>s.status==='running');
         if (running) {
           running.status = r.success||r.auto ? 'done' : (r.cancelled ? 'pending' : 'failed');
           running.result = r.message || r.error || '';
         }
-        if (isLast) {
+        if (isLast || chainBroken) {
+          activePlan.steps.forEach(s => { if(s.status==='pending'||s.status==='running') s.status='failed'; });
           renderPlan(activePlan);
           activePlan = null;
           updatePlanBadge();
@@ -812,7 +953,7 @@ function handle(msg) {
       else if(r.success)  addLog('ok',  '+',r.message||'Done');
       else if(r.cancelled)addLog('inf', '-','Cancelled');
       else                addLog('err', 'x',r.error||r.message||'Failed');
-      if(isLast) setPill('idle');
+      if(isLast||chainBroken) setPill('idle');
       break;
     }
 
@@ -821,15 +962,42 @@ function handle(msg) {
       updateStats(msg.stats);
       if (msg.thumbnail) updateThumb(msg.thumbnail);
       break;
+
+    case 'screen_toggled': {
+      const stEl = document.getElementById('screen-toggle');
+      if (stEl) stEl.className = 'toggle' + (msg.enabled ? ' on' : '');
+      addLog('inf', msg.enabled ? '+' : '-', 'Screen capture ' + (msg.enabled ? 'on' : 'off'));
+      break;
+    }
   }
 }
 
 window.pacify?.onWorkspaceEvent?.(handle);
+function setTheme(name) {
+  document.querySelectorAll('.theme-opt').forEach(e => e.classList.remove('on'));
+  document.getElementById('th-' + name)?.classList.add('on');
+  // Apply to workspace document immediately
+  document.documentElement.setAttribute('data-theme', name === 'midnight' ? '' : name);
+  // Broadcast to main window via IPC relay
+  window.pacify?.sendToMain?.({type:'theme_change', theme: name});
+  // Save to config
+  window.pacify?.getConfig?.().then(cfg => {
+    if (!cfg) return;
+    cfg.ui = cfg.ui || {};
+    cfg.ui.theme = name;
+    window.pacify?.saveConfig?.(cfg);
+  });
+}
+
 function openLink(url) {
   window.pacify?.sendToMain({ type: 'open_external', url });
 }
 window.pacify?.getConfig?.().then(c=>{
   if(c?.entity?.permission_tier) setTier(c.entity.permission_tier);
+  // Sync screen-capture toggle to actual config state on load
+  const screenOn = c?.perception?.vision_enabled ?? false;
+  const stEl = document.getElementById('screen-toggle');
+  if (stEl) stEl.className = 'toggle' + (screenOn ? ' on' : '');
 }).catch(()=>{});
 
 addLog('inf','o','Ready');

@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('pacify', {
   getConfig:      ()  => ipcRenderer.invoke('get-config'),
   saveConfig:     (c) => ipcRenderer.invoke('save-config', c),
   resetConfig:    ()  => ipcRenderer.invoke('reset-config'),
+  resetAll:       ()  => ipcRenderer.invoke('reset-all'),
   // Window
   getBackendUrl:  ()  => ipcRenderer.invoke('backend-url'),
   close:          ()  => ipcRenderer.send('window-close'),
