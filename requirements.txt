@@ -1,33 +1,40 @@
-# SOUL — Python Dependencies
+# SOUL — Python Dependencies  v1.6
 # Install: pip install -r requirements.txt
+#
+# Python 3.13 note: pydantic 2.7 has no cp313 wheel and requires Rust to build.
+#   Using >=2.9.2 which ships prebuilt cp313 wheels — no Rust needed.
+#   fastapi pinned to match (0.115+ is compatible with pydantic 2.9+).
+#
+# Windows note: pyautogui requires no extra system deps on Win10/11.
+# If you hit a 'PyGetWindow' error, run: pip install pygetwindow
 
 # ── Core server ──────────────────────────────────────────────────────────────
-fastapi==0.111.0
+fastapi>=0.115.0,<0.116.0
 uvicorn[standard]==0.30.0
 websockets==12.0
 httpx==0.27.0
-pydantic==2.7.0
+pydantic>=2.9.2,<3.0.0
 
-# ── Perception ───────────────────────────────────────────────────────────────
+# ── Perception & system ──────────────────────────────────────────────────────
 Pillow==10.4.0
 psutil==5.9.8
 
-# ── TTS (text-to-speech) ─────────────────────────────────────────────────────
+# ── Automation (actions: type_text, press_keys, focus_window, etc.) ──────────
+pyautogui==0.9.54
+pygetwindow==0.0.9
+
+# ── Voice — TTS (built-in Windows SAPI5 voices, no extra install) ────────────
 pyttsx3==2.90
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
 
-# ── v2 Voice Pipeline — uncomment to enable ──────────────────────────────────
-# STT: local Whisper transcription (no cloud, no cost)
-# openai-whisper
-#
-# Mic input: requires PortAudio system library
-#   Windows:  pipwin install pyaudio  (if pip install fails)
-#   macOS:    brew install portaudio && pip install pyaudio
-#   Linux:    sudo apt install portaudio19-dev && pip install pyaudio
+# ── v2 Voice pipeline — uncomment to enable ──────────────────────────────────
+# Requires portaudio: winget install -e --id PortAudio.PortAudio
 # pyaudio==0.2.14
 #
-# Wake word: Porcupine (requires PORCUPINE_KEY in .env)
-#   Free key at: https://console.picovoice.ai
+# Whisper STT (local, ~140MB model download on first run):
+# openai-whisper==20231117
+#
+# Porcupine wake word (requires free key from https://picovoice.ai):
 # pvporcupine==3.0.2

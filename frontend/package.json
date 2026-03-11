@@ -2,6 +2,7 @@
   "name": "soul",
   "version": "1.6.0",
   "description": "SOUL — your device companion",
+  "author": "LoneMagma",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

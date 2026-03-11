@@ -1,46 +1,56 @@
-# Dependencies
-node_modules/
-frontend/node_modules/
+# ── Environment — NEVER commit keys ─────────────────────────────────────────
+.env
+*.pfx
+*.p12
+soul-cert.pfx
 
-# Python
+# ── Runtime data ─────────────────────────────────────────────────────────────
+soul_memory.db
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+config.json
+
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.egg-info/
-dist/
-build/
 *.egg
+.eggs/
 
-# Environment — NEVER commit your API key
-.env
+# ── PyInstaller build output ─────────────────────────────────────────────────
+backend/build/
+backend/dist/
+build/
 
-# Runtime data
-soul_memory.db
-*.db
-
-# Electron build output
+# ── Electron / Node ──────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
 frontend/dist/
 
-# Dev utilities — not for distribution
-SOUL_patch.ps1
+# ── Python virtual environments ──────────────────────────────────────────────
+venv/
+.venv/
+env/
 
-# OS
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Editor
+# ── Editor ───────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Logs
+# ── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 logs/
 
-# Python virtual environments
-venv/
-.venv/
-env/
+# ── Dev utilities — not for distribution ─────────────────────────────────────
+SOUL_patch.ps1
+sign.ps1
