@@ -1,0 +1,56 @@
+# ── Environment — never commit API keys ──────────────────────────────────────
+.env
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+build/
+dist/
+venv/
+.venv/
+env/
+
+# ── Database ─────────────────────────────────────────────────────────────────
+soul_memory.db
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# ── Runtime config (written on first run) ────────────────────────────────────
+config.json
+
+# ── PyInstaller ──────────────────────────────────────────────────────────────
+backend/dist/
+backend/build/
+*.spec.bak
+
+# ── Node / Electron ──────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# ── Dev utilities — not for distribution ─────────────────────────────────────
+SOUL_patch.ps1
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ── Editor ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.user
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
