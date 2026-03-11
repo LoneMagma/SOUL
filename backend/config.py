@@ -47,7 +47,7 @@ DEFAULT_CONFIG = {
         "provider":        "groq",
         "model":           "llama-3.3-70b-versatile",
         "preferred_model": "",
-        "vision_model":    "llama-3.2-90b-vision-preview",
+        "vision_model":    "meta-llama/llama-4-scout-17b-16e-instruct",
         "max_tokens":      1024,
         "temperature":     0.85,
     },

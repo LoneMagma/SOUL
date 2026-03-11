@@ -7,7 +7,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage,
         shell, globalShortcut } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const net = require('net');
 
@@ -63,10 +63,43 @@ function loadEnvKey(key) {
 }
 
 // ── Backend ─────────────────────────────────────────────
+
+// Kill whatever process is holding a given port.
+// Uses netstat to find the PID, taskkill to remove it.
+function killPortOccupant(port) {
+  try {
+    const out = execSync(
+      `netstat -ano | findstr :${port}`,
+      { encoding: 'utf8', timeout: 4000 }
+    );
+    const lines = out.split('\n').filter(l => l.includes('LISTENING'));
+    if (!lines.length) return;
+
+    const pid = lines[0].trim().split(/\s+/).pop();
+    if (!pid || pid === '0') return;
+
+    console.log(`[SOUL] Killing stale process on port ${port} (PID ${pid})`);
+    execSync(`taskkill /PID ${pid} /F`, { timeout: 4000 });
+
+    // Brief pause so the OS releases the port before we try to bind it
+    const deadline = Date.now() + 1500;
+    while (Date.now() < deadline) { /* spin */ }
+
+  } catch (_) {
+    // netstat found nothing or taskkill failed — port is probably already free
+  }
+}
+
 async function startBackend() {
   if (await isPortInUse(BACKEND_PORT)) {
-    console.log('[SOUL] Backend already running, attaching...');
-    return true;
+    console.log('[SOUL] Port occupied — killing stale backend...');
+    killPortOccupant(BACKEND_PORT);
+
+    if (await isPortInUse(BACKEND_PORT)) {
+      console.warn('[SOUL] Could not free port — proceeding anyway.');
+    } else {
+      console.log('[SOUL] Port cleared. Spawning fresh backend.');
+    }
   }
 
   const userData = app.getPath('userData');

@@ -30,8 +30,7 @@ MODEL_CHAIN = [
 _FAST_MODEL = "llama-3.1-8b-instant"
 
 VISION_MODELS = [
-    "llama-3.2-90b-vision-preview",
-    "llama-3.2-11b-vision-preview",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
 ]
 
 # ── Trivial message pattern ──────────────────────────────────────────────────

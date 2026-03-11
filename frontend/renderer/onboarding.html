@@ -1,666 +1,732 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>SOUL — Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap');
-
-:root {
-  --bg:    #07090e;
-  --s1:    rgba(255,255,255,.038);
-  --s2:    rgba(255,255,255,.062);
-  --b1:    rgba(255,255,255,.07);
-  --b2:    rgba(255,255,255,.12);
-  --acc:   #8b7cf8;
-  --as:    rgba(139,124,248,.12);
-  --ab:    rgba(139,124,248,.32);
-  --text:  #ddd8f3;
-  --dim:   rgba(221,216,243,.42);
-  --dim2:  rgba(221,216,243,.62);
-  --green: #4de89c;
-  --glow:  rgba(139,124,248,.30);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090f;--s1:#10101e;--b1:rgba(139,124,248,.11);--b2:rgba(139,124,248,.22);
+  --acc:#8b7cf8;--acc2:#6d5ef0;--as:rgba(139,124,248,.13);--ab:rgba(139,124,248,.36);
+  --text:#e8e6f4;--dim:rgba(232,230,244,.36);--dim2:rgba(232,230,244,.54);
+  --green:#4ade80;--amber:#f59e0b;--red:#f87171;--r:22px;
+}
+html,body{
+  width:400px;height:640px;background:transparent;
+  border-radius:var(--r);overflow:hidden;
+  font-family:'Syne',sans-serif;color:var(--text);
+  -webkit-font-smoothing:antialiased;user-select:none;
+}
+#shell{
+  width:400px;height:640px;background:var(--bg);
+  border-radius:var(--r);border:1px solid var(--b1);
+  position:relative;overflow:hidden;
+}
+#shell::before{
+  content:'';position:absolute;inset:0;border-radius:var(--r);
+  pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
-html, body {
-  font-family: 'Syne', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  width: 400px; height: 640px;
-  overflow: hidden;
-  user-select: none;
-  -webkit-app-region: no-drag;
+/* ── Progress ────────────────────────────────────── */
+#prog-track{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--b1);border-radius:var(--r) var(--r) 0 0;
+  z-index:200;overflow:hidden;
+}
+#prog-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--acc2),var(--acc),rgba(139,124,248,.5));
+  background-size:300% 100%;animation:pshine 2.5s linear infinite;
+  border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1);
+  width:16%;box-shadow:0 0 10px rgba(139,124,248,.5);
+}
+@keyframes pshine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Screens ─────────────────────────────────────── */
+/* KEY FIX: each screen is absolutely placed; z-index controls stacking.
+   Active screen sits above all others at z:10.
+   Exiting screen drops to z:1 so it never bleeds on top.              */
+.screen{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  z-index:1;
+  transform:translateX(24px);
+  transition:opacity .3s ease, transform .3s cubic-bezier(.4,0,.2,1), z-index 0s .3s;
+}
+.screen.active{
+  opacity:1;pointer-events:all;
+  z-index:10;
+  transform:translateX(0);
+  transition:opacity .3s ease, transform .3s cubic-bezier(.4,0,.2,1), z-index 0s 0s;
+}
+.screen.exit{
+  opacity:0;pointer-events:none;
+  z-index:1;
+  transform:translateX(-24px);
+  transition:opacity .22s ease, transform .22s ease, z-index 0s .22s;
 }
 
-/* ── Screen system ── */
-.screen {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s ease;
-}
-.screen.active { opacity: 1; pointer-events: all; }
+/* ── Shared header ───────────────────────────────── */
+.hd{padding:20px 28px 0;flex-shrink:0;}
+.ey{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);margin-bottom:9px;}
+.ht{font-size:22px;font-weight:800;line-height:1.16;}
+.hs{font-size:12px;color:var(--dim2);margin-top:7px;line-height:1.65;}
 
-/* ── Progress bar (top) ── */
-.prog-bar {
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 2px; background: var(--b1); z-index: 10;
-}
-.prog-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--acc), #60a5fa);
-  border-radius: 2px;
-  transition: width .5s cubic-bezier(.4,0,.2,1);
+/* ════════════════════════════════════════════════════
+   CSS SIGNAL ORB
+   Rotating arcs + pulsing dot — no canvas required.
+   Sizes: large (80px, chat screen) · small (26px, bubbles) · xl (120px, ready)
+   States driven by parent .orb-[state] class.
+════════════════════════════════════════════════════ */
+.orb{
+  position:relative;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;
 }
 
-/* ── Shared components ── */
-.screen-inner { flex:1; overflow:hidden; display:flex; flex-direction:column; }
-.screen-scroll { flex:1; overflow-y:auto; padding:28px 26px 0; }
-.screen-scroll::-webkit-scrollbar { width:0; }
-.screen-footer {
-  padding: 16px 26px 22px;
-  border-top: 1px solid var(--b1);
-  flex-shrink: 0;
+/* Arc rings */
+.orb .a1,.orb .a2,.orb .a3{
+  position:absolute;border-radius:50%;
+  border:1.5px solid transparent;
+}
+/* Dot */
+.orb .dot{
+  border-radius:50%;
+  background:var(--acc);
+  position:relative;z-index:2;
+  box-shadow:0 0 12px rgba(139,124,248,.8),0 0 4px rgba(139,124,248,1);
+}
+@keyframes spin1{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes spin2{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes spin3{from{transform:rotate(45deg)}to{transform:rotate(405deg)}}
+@keyframes dotp{
+  0%,100%{transform:scale(1);box-shadow:0 0 10px rgba(139,124,248,.7),0 0 3px rgba(139,124,248,1);}
+  50%{transform:scale(1.5);box-shadow:0 0 18px rgba(139,124,248,.9),0 0 6px rgba(139,124,248,1);}
 }
 
-/* ── Signal mark ── */
-.signal {
-  position:relative; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-}
-.s-arc { position:absolute; border-radius:50%; border:1px solid transparent; }
-.s-a1 { border-top-color:rgba(139,124,248,.7); border-right-color:rgba(139,124,248,.1); border-left-color:rgba(139,124,248,.1); animation:spin 9s linear infinite; }
-.s-a2 { border-right-color:rgba(139,124,248,.5); border-bottom-color:rgba(139,124,248,.07); animation:spin 6s linear infinite reverse; }
-.s-a3 { border-top-color:rgba(139,124,248,.3); border-bottom-color:rgba(139,124,248,.3); animation:spin 3.5s linear infinite; }
-.s-dot { border-radius:50%; background:var(--acc); box-shadow:0 0 10px var(--glow); animation:dp 3s ease-in-out infinite; position:relative; z-index:2; }
-@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-@keyframes dp   { 0%,100%{transform:scale(1)} 50%{transform:scale(1.6);box-shadow:0 0 18px var(--glow)} }
+/* ── Large orb (chat top, 80px) ── */
+.orb-lg{width:80px;height:80px;}
+.orb-lg .a1{width:80px;height:80px;border-top-color:rgba(139,124,248,.80);border-right-color:rgba(139,124,248,.08);animation:spin1 7s linear infinite;}
+.orb-lg .a2{width:56px;height:56px;border-right-color:rgba(139,124,248,.55);border-bottom-color:rgba(139,124,248,.08);animation:spin2 5.5s linear infinite;}
+.orb-lg .a3{width:34px;height:34px;border-top-color:rgba(139,124,248,.38);border-left-color:rgba(139,124,248,.38);animation:spin3 3.8s linear infinite;}
+.orb-lg .dot{width:7px;height:7px;animation:dotp 2.8s ease-in-out infinite;}
 
-/* ── Chat bubbles (screen 1) ── */
-.chat-area {
-  flex:1; overflow-y:auto; padding:28px 22px 14px;
-  display:flex; flex-direction:column; gap:14px;
-}
-.chat-area::-webkit-scrollbar { width:0; }
-.msg-soul { display:flex; gap:10px; align-items:flex-start; animation:msg-in .28s ease; }
-.msg-soul .bub {
-  background:var(--s1); border:1px solid var(--b1);
-  border-radius:14px 14px 14px 3px;
-  padding:10px 13px; font-size:13px; line-height:1.65;
-  color:var(--text); max-width:270px;
-}
-.msg-user { display:flex; justify-content:flex-end; animation:msg-in .28s ease; }
-.msg-user .bub {
-  background:var(--as); border:1px solid var(--ab);
-  border-radius:14px 14px 3px 14px;
-  padding:10px 13px; font-size:13px; line-height:1.65;
-  color:var(--text); max-width:270px;
-}
-@keyframes msg-in { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
-.typing { display:flex; gap:10px; align-items:center; animation:msg-in .28s ease; }
-.typing-dots { display:flex; gap:4px; padding:12px 14px; background:var(--s1); border:1px solid var(--b1); border-radius:14px 14px 14px 3px; }
-.td { width:4px; height:4px; border-radius:50%; background:var(--acc); opacity:.4; animation:tdb 1s ease-in-out infinite; }
-.td:nth-child(2){animation-delay:.16s} .td:nth-child(3){animation-delay:.32s}
-@keyframes tdb { 0%,80%,100%{transform:translateY(0);opacity:.4} 40%{transform:translateY(-4px);opacity:1} }
-.opts-wrap { padding:0 22px 14px; display:flex; flex-wrap:wrap; gap:7px; }
-.opt {
-  padding:7px 14px; border-radius:20px;
-  background:var(--s1); border:1px solid var(--b1);
-  color:var(--dim2); font-family:'Syne',sans-serif; font-size:11px;
-  cursor:pointer; transition:all .14s;
-}
-.opt:hover { border-color:var(--ab); color:var(--text); background:var(--as); }
-.inp-row {
-  padding:12px 18px; display:flex; gap:8px;
-  align-items:center; border-top:1px solid var(--b1); flex-shrink:0;
-}
-.chat-inp {
-  flex:1; background:var(--s1); border:1px solid var(--b1);
-  border-radius:10px; padding:10px 12px; color:var(--text);
-  font-family:'Syne',sans-serif; font-size:13px; outline:none;
-  transition:border-color .15s;
-}
-.chat-inp:focus { border-color:var(--ab); }
-.chat-inp::placeholder { color:var(--dim); }
-.chat-inp:disabled { opacity:.38; }
-.btn-send {
-  width:34px; height:34px; border-radius:9px; border:none;
-  background:var(--acc); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:opacity .15s,transform .1s; flex-shrink:0;
-}
-.btn-send:hover { opacity:.82; }
-.btn-send:active { transform:scale(.92); }
-.btn-send:disabled { opacity:.28; cursor:default; }
+/* ── Small orb (chat bubble icon, 26px) ── */
+.orb-sm{width:26px;height:26px;}
+.orb-sm .a1{width:26px;height:26px;border-top-color:rgba(139,124,248,.75);border-right-color:rgba(139,124,248,.07);animation:spin1 6s linear infinite;}
+.orb-sm .a2{width:18px;height:18px;border-right-color:rgba(139,124,248,.50);border-bottom-color:rgba(139,124,248,.07);animation:spin2 4.5s linear infinite;}
+.orb-sm .a3{width:10px;height:10px;border-top-color:rgba(139,124,248,.35);border-left-color:rgba(139,124,248,.35);animation:spin3 3s linear infinite;}
+.orb-sm .dot{width:3px;height:3px;animation:dotp 2.6s ease-in-out infinite;}
 
-/* ── Screen 2 — capabilities ── */
-.cap-header { padding:26px 26px 20px; flex-shrink:0; }
-.cap-title { font-size:22px; font-weight:800; letter-spacing:-.01em; line-height:1.2; }
-.cap-sub { font-size:12px; color:var(--dim2); margin-top:6px; line-height:1.5; }
+/* ── XL orb (ready screen, 120px) ── */
+.orb-xl{width:120px;height:120px;}
+.orb-xl .a1{width:120px;height:120px;border-top-color:rgba(139,124,248,.82);border-right-color:rgba(139,124,248,.09);animation:spin1 9s linear infinite;}
+.orb-xl .a2{width:84px;height:84px;border-right-color:rgba(139,124,248,.58);border-bottom-color:rgba(139,124,248,.09);animation:spin2 7s linear infinite;}
+.orb-xl .a3{width:52px;height:52px;border-top-color:rgba(139,124,248,.40);border-left-color:rgba(139,124,248,.40);animation:spin3 4.8s linear infinite;}
+.orb-xl .dot{width:11px;height:11px;animation:dotp 3s ease-in-out infinite;}
 
-.cap-grid { padding:0 26px; display:flex; flex-direction:column; gap:8px; }
-.cap-card {
-  display:flex; align-items:flex-start; gap:12px;
-  padding:12px 14px; border-radius:12px;
-  background:var(--s1); border:1px solid var(--b1);
-  animation:card-in .25s ease both;
-}
-@keyframes card-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-.cap-icon {
-  width:32px; height:32px; border-radius:9px; flex-shrink:0;
-  background:var(--as); border:1px solid var(--ab);
-  display:flex; align-items:center; justify-content:center;
-  color:var(--acc);
-}
-.cap-text {}
-.cap-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; }
-.cap-desc { font-size:11px; color:var(--dim2); line-height:1.5; }
+/* State modifiers — speed up arcs + change dot color */
+.orb.thinking .a1{animation-duration:2.8s;}
+.orb.thinking .a2{animation-duration:2.2s;}
+.orb.thinking .a3{animation-duration:1.5s;}
+.orb.thinking .dot{background:#b4a0ff;box-shadow:0 0 14px rgba(180,160,255,.9);}
 
-/* ── Screen 3 — permission tier ── */
-.tier-header { padding:26px 26px 20px; flex-shrink:0; }
-.tier-title { font-size:20px; font-weight:800; }
-.tier-sub { font-size:12px; color:var(--dim2); margin-top:6px; line-height:1.5; }
-.tier-cards { padding:0 26px; display:flex; flex-direction:column; gap:10px; }
-.tier-card {
-  padding:14px 16px; border-radius:12px;
-  background:var(--s1); border:2px solid var(--b1);
-  cursor:pointer; transition:all .16s; position:relative;
-}
-.tier-card.on { background:var(--as); border-color:var(--acc); }
-.tier-card:hover:not(.on) { border-color:var(--ab); background:rgba(139,124,248,.06); }
-.tier-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
-.tier-name { font-size:13px; font-weight:700; }
-.tier-badge {
-  font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-  padding:2px 8px; border-radius:20px;
-  background:var(--b1); color:var(--dim2);
-}
-.tier-card.on .tier-badge { background:var(--acc); color:#fff; }
-.tier-desc { font-size:11px; color:var(--dim2); line-height:1.55; }
-.tier-examples { margin-top:8px; display:flex; flex-direction:column; gap:3px; }
-.tier-ex {
-  display:flex; align-items:center; gap:6px;
-  font-size:10.5px; color:var(--dim); font-family:'JetBrains Mono',monospace;
-}
-.tier-ex-dot { width:4px; height:4px; border-radius:50%; flex-shrink:0; }
+.orb.speaking .a1{animation-duration:1.2s;}
+.orb.speaking .a2{animation-duration:.9s;}
+.orb.speaking .a3{animation-duration:.6s;}
+.orb.speaking .dot{background:#7de8d5;box-shadow:0 0 16px rgba(77,232,175,.9);}
 
-/* ── Screen 4 — personality ── */
-.pers-header { padding:26px 26px 20px; flex-shrink:0; }
-.pers-title { font-size:20px; font-weight:800; }
-.pers-sub { font-size:12px; color:var(--dim2); margin-top:6px; }
-.pers-body { padding:0 26px; display:flex; flex-direction:column; gap:18px; }
-.q-block {}
-.q-label { font-size:9.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
-.seg { display:flex; gap:7px; }
-.seg-btn {
-  flex:1; padding:10px 6px; background:var(--s1); border:1px solid var(--b1);
-  border-radius:10px; color:var(--dim2);
-  font-family:'Syne',sans-serif; font-size:11px; font-weight:600;
-  cursor:pointer; transition:all .15s; text-align:center; line-height:1.3;
-}
-.seg-btn:hover { border-color:var(--ab); color:var(--text); }
-.seg-btn.on { background:var(--as); border-color:var(--acc); color:var(--text); }
-.seg-btn .desc { font-size:9px; font-weight:400; opacity:.55; display:block; margin-top:2px; }
+.orb.listening .a1{animation-duration:2s;}
+.orb.listening .a3{border-top-color:rgba(77,232,175,.6);border-left-color:rgba(77,232,175,.6);}
+.orb.listening .dot{background:#4de8ac;box-shadow:0 0 14px rgba(77,232,175,.9);}
 
-/* ── Shared footer button ── */
-.btn-next, .btn-back {
-  padding:12px 22px; border-radius:11px; border:none;
-  font-family:'Syne',sans-serif; font-size:13px; font-weight:700;
-  letter-spacing:.05em; cursor:pointer;
-  transition:opacity .15s,transform .1s;
+/* Glow ring under XL orb on ready screen */
+.orb-xl-glow{
+  position:absolute;inset:-12px;border-radius:50%;
+  border:1px solid rgba(139,124,248,.12);
+  animation:orp 3.5s ease-in-out infinite;
 }
-.btn-next { background:var(--acc); color:#fff; flex:1; }
-.btn-next:hover { opacity:.86; }
-.btn-next:active { transform:scale(.97); }
-.btn-back { background:var(--s1); border:1px solid var(--b1); color:var(--dim2); width:44px; padding:12px; flex-shrink:0; }
-.btn-back:hover { border-color:var(--ab); color:var(--text); }
-.footer-row { display:flex; gap:9px; align-items:center; }
+.orb-xl-glow-2{
+  position:absolute;inset:-24px;border-radius:50%;
+  border:1px solid rgba(139,124,248,.06);
+  animation:orp 3.5s ease-in-out infinite .7s;
+}
+@keyframes orp{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.04);opacity:.35}}
+
+/* ── Chat top ── */
+.chat-top{
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 0 8px;flex-shrink:0;
+}
+#state-lbl{
+  margin-top:10px;
+  font-family:'JetBrains Mono',monospace;font-size:8px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  transition:color .35s;
+}
+
+/* ── Chat messages ───────────────────────────────── */
+.chat-area{flex:1;overflow-y:auto;padding:8px 22px 8px;display:flex;flex-direction:column;gap:11px;scrollbar-width:none;}
+.chat-area::-webkit-scrollbar{display:none;}
+.msg-soul{display:flex;gap:9px;align-items:flex-end;animation:msgin .28s ease both;}
+.msg-soul .bub{background:var(--s1);border:1px solid var(--b1);border-radius:14px 14px 14px 3px;padding:9px 13px;font-size:12.5px;line-height:1.68;max-width:265px;}
+.msg-user{display:flex;justify-content:flex-end;animation:msgin .28s ease both;}
+.msg-user .bub{background:var(--as);border:1px solid var(--ab);border-radius:14px 14px 3px 14px;padding:9px 13px;font-size:12.5px;line-height:1.68;max-width:265px;}
+@keyframes msgin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+.typ-ind{display:flex;gap:9px;align-items:center;animation:msgin .28s ease both;}
+.typ-dots{display:flex;gap:4px;padding:10px 13px;background:var(--s1);border:1px solid var(--b1);border-radius:14px 14px 14px 3px;}
+.td{width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.35;animation:tdb 1.1s ease-in-out infinite;}
+.td:nth-child(2){animation-delay:.16s}.td:nth-child(3){animation-delay:.32s}
+@keyframes tdb{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
+
+.opts-row{padding:0 22px 8px;display:flex;flex-wrap:wrap;gap:7px;animation:msgin .28s ease both;}
+.opt{padding:7px 14px;background:var(--s1);border:1px solid var(--b2);border-radius:20px;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--dim2);transition:all .14s;}
+.opt:hover{background:var(--as);border-color:var(--acc);color:var(--text);}
+
+/* ── Input row ───────────────────────────────────── */
+.inp-row{padding:7px 16px 15px;display:flex;gap:8px;flex-shrink:0;}
+.cinp{flex:1;background:var(--s1);border:1px solid var(--b2);border-radius:12px;outline:none;padding:10px 13px;font-family:'Syne',sans-serif;font-size:13px;color:var(--text);transition:border-color .14s;}
+.cinp::placeholder{color:var(--dim)}.cinp:focus{border-color:var(--acc)}.cinp:disabled{opacity:.38;cursor:default;}
+.sbtn{width:40px;height:40px;flex-shrink:0;align-self:flex-end;background:var(--acc);border:none;border-radius:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .14s,transform .1s;}
+.sbtn:hover{opacity:.84}.sbtn:active{transform:scale(.91)}.sbtn:disabled{opacity:.25;cursor:default;}
+
+/* ── Capabilities ────────────────────────────────── */
+.cap-body{flex:1;overflow-y:auto;padding:14px 28px 0;display:flex;flex-direction:column;gap:8px;scrollbar-width:none;-webkit-mask:linear-gradient(#000 78%,transparent 100%);mask:linear-gradient(#000 78%,transparent 100%);}
+.cap-body::-webkit-scrollbar{display:none;}
+.cap-row{display:flex;gap:11px;align-items:flex-start;padding:11px 13px;background:var(--s1);border:1px solid var(--b1);border-radius:12px;animation:msgin .3s ease both;}
+.cap-row:nth-child(1){animation-delay:.04s}.cap-row:nth-child(2){animation-delay:.09s}.cap-row:nth-child(3){animation-delay:.14s}.cap-row:nth-child(4){animation-delay:.19s}.cap-row:nth-child(5){animation-delay:.24s}.cap-row:nth-child(6){animation-delay:.29s}
+.cap-icon{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.cap-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.cap-desc{font-size:11px;color:var(--dim2);line-height:1.52;}
+.ctag{display:inline-block;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px;}
+
+/* ── Tiers ───────────────────────────────────────── */
+.tier-body{flex:1;overflow-y:auto;padding:14px 28px 0;display:flex;flex-direction:column;gap:9px;scrollbar-width:none;-webkit-mask:linear-gradient(#000 80%,transparent 100%);mask:linear-gradient(#000 80%,transparent 100%);}
+.tier-body::-webkit-scrollbar{display:none;}
+.tcard{padding:13px 15px;border-radius:13px;background:var(--s1);border:2px solid var(--b1);cursor:pointer;transition:border-color .16s;position:relative;overflow:hidden;}
+.tcard::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--as),transparent 55%);opacity:0;transition:opacity .18s;pointer-events:none;}
+.tcard:hover::after{opacity:.7}.tcard.on{border-color:var(--acc)}.tcard.on::after{opacity:1}
+.ttop{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.tname{font-size:12.5px;font-weight:700;position:relative;z-index:1;}
+.tbadge{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:var(--b1);color:var(--dim);transition:all .16s;position:relative;z-index:1;}
+.tcard.on .tbadge{background:var(--acc);color:#fff;}
+.tdesc{font-size:11px;color:var(--dim2);line-height:1.52;position:relative;z-index:1;}
+.texs{display:flex;flex-direction:column;gap:3px;margin-top:8px;position:relative;z-index:1;}
+.tex{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);}
+.tdot{width:4px;height:4px;border-radius:50%;flex-shrink:0;background:currentColor;}
+
+/* ── Personality ─────────────────────────────────── */
+.pers-body{flex:1;overflow-y:auto;padding:14px 28px 0;display:flex;flex-direction:column;gap:16px;scrollbar-width:none;}
+.pers-body::-webkit-scrollbar{display:none;}
+.qb{display:flex;flex-direction:column;gap:8px;}
+.ql{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);}
+.seg{display:flex;gap:6px;}
+.segbtn{flex:1;padding:10px 6px;background:var(--s1);border:1px solid var(--b1);border-radius:10px;color:var(--dim2);font-family:'Syne',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .14s;text-align:center;line-height:1.3;}
+.segbtn:hover{border-color:var(--ab);color:var(--text)}.segbtn.on{background:var(--as);border-color:var(--acc);color:var(--text);}
+.segbtn .hint{display:block;margin-top:2px;font-size:9px;font-weight:400;opacity:.48;font-family:'JetBrains Mono',monospace;}
+.scgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.scrow{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;}
+.sckey{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--acc);}
+.scdesc{font-size:10px;color:var(--dim2);}
+
+/* ── Ready ───────────────────────────────────────── */
+#s5{align-items:center;justify-content:flex-start;padding-top:32px;gap:0;}
+.ready-orb-wrap{position:relative;width:120px;height:120px;margin-bottom:18px;flex-shrink:0;animation:rfloat 3.8s ease-in-out infinite;}
+@keyframes rfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.rname{font-size:23px;font-weight:800;text-align:center;margin-bottom:4px;}
+.rname em{font-style:normal;color:var(--acc);}
+.rsummary{display:flex;flex-direction:column;gap:4px;width:calc(100% - 56px);margin:12px 0 20px;}
+.rsrow{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:var(--s1);border:1px solid var(--b1);border-radius:9px;}
+.rskey{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);letter-spacing:.04em;}
+.rsval{font-size:11px;font-weight:600;}
+.rbtn{width:calc(100% - 56px);padding:14px;background:linear-gradient(135deg,var(--acc2),var(--acc));border:none;border-radius:13px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:opacity .14s,transform .1s;box-shadow:0 4px 28px rgba(139,124,248,.40);flex-shrink:0;}
+.rbtn:hover{opacity:.87}.rbtn:active{transform:scale(.97);}
+.vtag{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.07em;}
+
+/* ── Footer ──────────────────────────────────────── */
+.foot{padding:10px 28px 18px;display:flex;gap:8px;flex-shrink:0;}
+.bbk{width:42px;height:42px;flex-shrink:0;background:var(--s1);border:1px solid var(--b1);border-radius:11px;color:var(--dim2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .14s,color .14s;}
+.bbk:hover{border-color:var(--ab);color:var(--text);}
+.bnx{flex:1;height:42px;background:linear-gradient(135deg,var(--acc2),var(--acc));border:none;border-radius:11px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:opacity .14s,transform .1s;box-shadow:0 3px 18px rgba(139,124,248,.28);}
+.bnx:hover{opacity:.87}.bnx:active{transform:scale(.97);}
 </style>
 </head>
 <body>
+<div id="shell">
+<div id="prog-track"><div id="prog-fill"></div></div>
 
-<!-- Progress bar -->
-<div class="prog-bar"><div class="prog-fill" id="prog" style="width:25%"></div></div>
-
-<!-- ─────────────────────────────────────────────────────────────────────────
-     SCREEN 1 — Chat intro (name + pronouns)
-──────────────────────────────────────────────────────────────────────────── -->
+<!-- ══ S1: Chat intro ══════════════════════════════ -->
 <div class="screen active" id="s1">
+  <div class="chat-top">
+    <!-- CSS Signal Orb — large -->
+    <div class="orb orb-lg" id="chat-orb">
+      <div class="a1"></div>
+      <div class="a2"></div>
+      <div class="a3"></div>
+      <div class="dot"></div>
+    </div>
+    <div id="state-lbl">IDLE</div>
+  </div>
   <div class="chat-area" id="chat"></div>
   <div id="opts-wrap"></div>
   <div class="inp-row">
-    <input class="chat-inp" id="inp" type="text" placeholder="type here…" autocomplete="off" disabled>
-    <button class="btn-send" id="send-btn" onclick="sendMsg()" disabled>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
+    <input class="cinp" id="inp" type="text" autocomplete="off" placeholder="type here…" disabled>
+    <button class="sbtn" id="sbtn" onclick="sendMsg()" disabled>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
     </button>
   </div>
 </div>
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     SCREEN 2 — What I can do
-──────────────────────────────────────────────────────────────────────────── -->
+<!-- ══ S2: Capabilities ════════════════════════════ -->
 <div class="screen" id="s2">
-  <div class="screen-inner">
-    <div class="cap-header">
-      <div class="cap-title">Here's what<br>I can do.</div>
-      <div class="cap-sub">I run natively on your machine. No cloud lag.<br>Everything happens right here.</div>
-    </div>
-    <div class="screen-scroll" style="padding-top:0">
-      <div class="cap-grid">
-
-        <div class="cap-card" style="animation-delay:.04s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">Open apps &amp; write to them</div>
-            <div class="cap-desc">"Open Notepad and write a poem" — she opens it and types the poem directly inside.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.08s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">Control Spotify</div>
-            <div class="cap-desc">"Play my liked songs" or "skip this one" — she handles it without you touching the app.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.12s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">See your screen</div>
-            <div class="cap-desc">When vision is on, she can describe what's open, spot errors, or help you navigate.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.16s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">Search the web</div>
-            <div class="cap-desc">She'll search and give you the answer directly — no opening a browser, no waiting.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.20s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">Create &amp; save files</div>
-            <div class="cap-desc">She saves everything to a dedicated SOUL folder in your Documents — always finds it.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.24s">
-          <div class="cap-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name">Watch the machine</div>
-            <div class="cap-desc">RAM, CPU, battery, what's eating resources — she monitors silently and speaks when it matters.</div>
-          </div>
-        </div>
-
-        <div class="cap-card" style="animation-delay:.28s;border-color:var(--ab)">
-          <div class="cap-icon" style="background:rgba(77,232,154,.1);border-color:rgba(77,232,154,.3);color:#4de89c">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-          <div class="cap-text">
-            <div class="cap-name" style="color:#4de89c">Remembers you</div>
-            <div class="cap-desc">She builds a memory across sessions — your name, your habits, what you've told her.</div>
-          </div>
-        </div>
-
+  <div class="hd">
+    <div class="ey">What I can do</div>
+    <div class="ht">Native actions,<br>no copy-paste.</div>
+    <div class="hs">I run on this machine directly. No relay, no clipboard middleman. I act.</div>
+  </div>
+  <div class="cap-body" style="margin-top:14px">
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(99,102,241,.14)">🖥️</div>
+      <div>
+        <div class="cap-name">Apps, Windows &amp; Input</div>
+        <div class="cap-desc">Opens, closes, focuses any app. Types into the right window via a 5-step focus-verification loop — not into my own input bar. Sends key combos.</div>
+        <span class="ctag">open_app · type_text · focus_window · press_keys</span>
       </div>
-      <div style="height:16px"></div>
     </div>
-    <div class="screen-footer">
-      <div class="footer-row">
-        <button class="btn-back" onclick="goBack(2)">←</button>
-        <button class="btn-next" onclick="goTo(3)">Got it →</button>
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(139,124,248,.14)">📁</div>
+      <div>
+        <div class="cap-name">Files &amp; Filesystem</div>
+        <div class="cap-desc">Creates, reads, writes, renames, opens files. Resolves paths correctly. If a write fails she knows and says so — no silent failures.</div>
+        <span class="ctag">create · read · write · rename · list_folder</span>
+      </div>
+    </div>
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(74,222,128,.14)">🌐</div>
+      <div>
+        <div class="cap-name">Web &amp; Clipboard</div>
+        <div class="cap-desc">Opens URLs, searches the web, reads and writes clipboard contents. Results flow back into the conversation — you stay in focus the whole time.</div>
+        <span class="ctag">web_search · open_url · read_clipboard · copy_to_clipboard</span>
+      </div>
+    </div>
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(245,158,11,.14)">🎵</div>
+      <div>
+        <div class="cap-name">Media, System &amp; Notifications</div>
+        <div class="cap-desc">Controls Spotify and system media. Sets volume, takes screenshots, sends toasts, locks screen, empties trash, manages power states.</div>
+        <span class="ctag">play_media · set_volume · take_screenshot · send_notification</span>
+      </div>
+    </div>
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(248,113,113,.14)">👁️</div>
+      <div>
+        <div class="cap-name">Screen Awareness + Verifier</div>
+        <div class="cap-desc">Watches your screen every 15s. Scores changes for relevance — speaks only on errors, crashes, build results. After acting, takes a post-shot to confirm success. One auto-retry on visual failure.</div>
+        <span class="ctag">observer · verifier · proactive · graceful fallback</span>
+      </div>
+    </div>
+    <div class="cap-row">
+      <div class="cap-icon" style="background:rgba(139,124,248,.14)">🧠</div>
+      <div>
+        <div class="cap-name">Memory &amp; Pattern Engine</div>
+        <div class="cap-desc">Holds 2,000 exchanges across sessions. Detects recurring habits after 3 observations and surfaces suggestions automatically. Key facts never expire.</div>
+        <span class="ctag">SQLite · session_history · pattern_engine · key_facts</span>
       </div>
     </div>
   </div>
+  <div class="foot">
+    <button class="bbk" onclick="nav(1)">←</button>
+    <button class="bnx" onclick="nav(3)">Got it →</button>
+  </div>
 </div>
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     SCREEN 3 — Permission tier
-──────────────────────────────────────────────────────────────────────────── -->
+<!-- ══ S3: Permissions ════════════════════════════ -->
 <div class="screen" id="s3">
-  <div class="screen-inner">
-    <div class="tier-header">
-      <div class="tier-title">Choose how much<br>she can do.</div>
-      <div class="tier-sub">You can change this anytime in the Workspace.</div>
-    </div>
-    <div class="screen-scroll" style="padding-top:0">
-      <div class="tier-cards">
-
-        <div class="tier-card" id="tc-min" onclick="pickTier('minimal')">
-          <div class="tier-top">
-            <div class="tier-name">Minimal</div>
-            <div class="tier-badge">CAUTIOUS</div>
-          </div>
-          <div class="tier-desc">Apps only. Confirms everything before acting. Best if you want full control.</div>
-          <div class="tier-examples">
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#8b7cf8"></div>open apps, read files</div>
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#8b7cf8"></div>confirms before typing</div>
-          </div>
-        </div>
-
-        <div class="tier-card on" id="tc-std" onclick="pickTier('standard')">
-          <div class="tier-top">
-            <div class="tier-name">Standard</div>
-            <div class="tier-badge">RECOMMENDED</div>
-          </div>
-          <div class="tier-desc">Apps, files, web. Asks before deleting or overwriting. Best for everyday use.</div>
-          <div class="tier-examples">
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#4de89c"></div>open + write + search</div>
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#4de89c"></div>asks before destructive actions</div>
-          </div>
-        </div>
-
-        <div class="tier-card" id="tc-full" onclick="pickTier('full')">
-          <div class="tier-top">
-            <div class="tier-name">Full</div>
-            <div class="tier-badge">POWER</div>
-          </div>
-          <div class="tier-desc">Everything, no confirms. Shell commands, file deletion, no questions asked.</div>
-          <div class="tier-examples">
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#f97316"></div>all actions, no prompts</div>
-            <div class="tier-ex"><div class="tier-ex-dot" style="background:#f97316"></div>use only if you trust her</div>
-          </div>
-        </div>
-
+  <div class="hd">
+    <div class="ey">Permissions</div>
+    <div class="ht">Set the leash.<br>Or don't.</div>
+    <div class="hs">Adjustable anytime — Workspace panel → Settings.</div>
+  </div>
+  <div class="tier-body" style="margin-top:14px">
+    <div class="tcard" id="tc-minimal" onclick="pickTier('minimal')">
+      <div class="ttop">
+        <div class="tname">Minimal</div>
+        <div class="tbadge">read-only</div>
       </div>
-
-      <!-- Shortcuts preview -->
-      <div style="margin:16px 26px 0">
-        <div style="font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">Shortcuts</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + S</span>
-            <span style="font-size:11px;color:var(--dim2)">Summon / focus SOUL</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + W</span>
-            <span style="font-size:11px;color:var(--dim2)">Open Workspace</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);background:var(--as);border:1px solid var(--ab);padding:2px 7px;border-radius:5px">Alt + H</span>
-            <span style="font-size:11px;color:var(--dim2)">Hide to ambient orb</span>
-          </div>
-        </div>
+      <div class="tdesc">She observes and answers — nothing more. No machine control of any kind. Good starting point if you want to see how she thinks before giving access.</div>
+      <div class="texs">
+        <div class="tex"><div class="tdot" style="color:var(--green)"></div>system info · clipboard reads · screenshots · web lookups</div>
+        <div class="tex"><div class="tdot" style="color:var(--red)"></div>no app control · no file writes · no typing · no actions</div>
       </div>
-      <div style="height:16px"></div>
     </div>
-    <div class="screen-footer">
-      <div class="footer-row">
-        <button class="btn-back" onclick="goBack(3)">←</button>
-        <button class="btn-next" onclick="goTo(4)">Continue →</button>
+    <div class="tcard on" id="tc-standard" onclick="pickTier('standard')">
+      <div class="ttop">
+        <div class="tname">Standard</div>
+        <div class="tbadge">recommended</div>
+      </div>
+      <div class="tdesc">Full task execution. Opens apps, reads and writes files, types text, searches the web, controls media. Asks before anything that can't be undone.</div>
+      <div class="texs">
+        <div class="tex"><div class="tdot" style="color:var(--green)"></div>open_app · write_file · type_text · web_search · play_media</div>
+        <div class="tex"><div class="tdot" style="color:var(--amber)"></div>confirms first: delete_file · kill_process · run_command</div>
+      </div>
+    </div>
+    <div class="tcard" id="tc-full" onclick="pickTier('full')">
+      <div class="ttop">
+        <div class="tname">Full</div>
+        <div class="tbadge">unrestricted</div>
+      </div>
+      <div class="tdesc">Everything, no prompts. All 25+ actions auto-confirmed including shell commands, process kills, file deletion. For when you fully trust her judgment.</div>
+      <div class="texs">
+        <div class="tex"><div class="tdot" style="color:var(--green)"></div>all actions · run_command · kill_process · delete_file</div>
+        <div class="tex"><div class="tdot" style="color:var(--red)"></div>zero confirmation on anything, ever — use with intent</div>
       </div>
     </div>
   </div>
+  <div class="foot">
+    <button class="bbk" onclick="nav(2)">←</button>
+    <button class="bnx" onclick="nav(4)">Continue →</button>
+  </div>
 </div>
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     SCREEN 4 — Personality
-──────────────────────────────────────────────────────────────────────────── -->
+<!-- ══ S4: Personality ════════════════════════════ -->
 <div class="screen" id="s4">
-  <div class="screen-inner">
-    <div class="pers-header">
-      <div class="pers-title">Dial in<br>the vibe.</div>
-      <div class="pers-sub" style="margin-top:6px;font-size:12px;color:var(--dim2);line-height:1.5">These tune her defaults. She'll still adapt naturally.</div>
-    </div>
-    <div class="screen-scroll" style="padding-top:0">
-      <div class="pers-body">
-
-        <div class="q-block">
-          <div class="q-label">When she has an opinion</div>
-          <div class="seg" id="seg-direct">
-            <button class="seg-btn on" data-val="direct" onclick="pick('seg-direct',this)">
-              Just say it<span class="desc">unfiltered</span>
-            </button>
-            <button class="seg-btn" data-val="balanced" onclick="pick('seg-direct',this)">
-              Pick moments<span class="desc">balanced</span>
-            </button>
-            <button class="seg-btn" data-val="gentle" onclick="pick('seg-direct',this)">
-              Tread lightly<span class="desc">careful</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="q-block">
-          <div class="q-label">When she notices something</div>
-          <div class="seg" id="seg-proact">
-            <button class="seg-btn on" data-val="speaks_up" onclick="pick('seg-proact',this)">
-              Tell me anyway<span class="desc">proactive</span>
-            </button>
-            <button class="seg-btn" data-val="when_asked" onclick="pick('seg-proact',this)">
-              Wait til asked<span class="desc">reactive</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="q-block">
-          <div class="q-label">Primary focus</div>
-          <div class="seg" id="seg-focus">
-            <button class="seg-btn on" data-val="mixed" onclick="pick('seg-focus',this)">
-              Everything<span class="desc">adaptive</span>
-            </button>
-            <button class="seg-btn" data-val="code" onclick="pick('seg-focus',this)">
-              Technical<span class="desc">dev / code</span>
-            </button>
-            <button class="seg-btn" data-val="creative" onclick="pick('seg-focus',this)">
-              Creative<span class="desc">writing / art</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- SOUL folder preview -->
-        <div style="padding:12px 14px;border-radius:11px;background:var(--s1);border:1px solid var(--b1)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)">SOUL Folder</span>
-          </div>
-          <div style="font-size:11px;color:var(--dim2);line-height:1.55">Files she creates live in <span style="font-family:'JetBrains Mono',monospace;color:var(--acc);font-size:10px">Documents\SOUL\</span> — always findable, never buried.</div>
-        </div>
-
+  <div class="hd">
+    <div class="ey">Personality</div>
+    <div class="ht">Her defaults.<br>Not a cage.</div>
+    <div class="hs">She reads the room and adjusts regardless — this is just where she starts.</div>
+  </div>
+  <div class="pers-body" style="margin-top:14px">
+    <div class="qb">
+      <div class="ql">Tone</div>
+      <div class="seg" id="seg-direct">
+        <button class="segbtn on" data-val="direct" onclick="pick('seg-direct',this)">Direct<span class="hint">dry · to the point</span></button>
+        <button class="segbtn" data-val="balanced" onclick="pick('seg-direct',this)">Balanced<span class="hint">reads the room</span></button>
+        <button class="segbtn" data-val="gentle" onclick="pick('seg-direct',this)">Warm<span class="hint">soft · patient</span></button>
       </div>
-      <div style="height:16px"></div>
     </div>
-    <div class="screen-footer">
-      <div class="footer-row">
-        <button class="btn-back" onclick="goBack(4)">←</button>
-        <button class="btn-next" onclick="finish()">Start →</button>
+    <div class="qb">
+      <div class="ql">Initiative</div>
+      <div class="seg" id="seg-proact">
+        <button class="segbtn on" data-val="speaks_up" onclick="pick('seg-proact',this)">Proactive<span class="hint">speaks up unprompted</span></button>
+        <button class="segbtn" data-val="balanced" onclick="pick('seg-proact',this)">Measured<span class="hint">when genuinely relevant</span></button>
+        <button class="segbtn" data-val="minimal" onclick="pick('seg-proact',this)">Quiet<span class="hint">only when asked</span></button>
+      </div>
+    </div>
+    <div class="qb">
+      <div class="ql">Domain</div>
+      <div class="seg" id="seg-focus">
+        <button class="segbtn" data-val="dev" onclick="pick('seg-focus',this)">Dev<span class="hint">code · cli · builds</span></button>
+        <button class="segbtn on" data-val="mixed" onclick="pick('seg-focus',this)">General<span class="hint">a bit of everything</span></button>
+        <button class="segbtn" data-val="creative" onclick="pick('seg-focus',this)">Creative<span class="hint">writing · ideas</span></button>
+      </div>
+    </div>
+    <div class="qb">
+      <div class="ql">Shortcuts</div>
+      <div class="scgrid">
+        <div class="scrow"><span class="sckey">Alt+S</span><span class="scdesc">Summon / hide</span></div>
+        <div class="scrow"><span class="sckey">Alt+W</span><span class="scdesc">Workspace panel</span></div>
+        <div class="scrow"><span class="sckey">Alt+Z</span><span class="scdesc">Ambient orb</span></div>
+        <div class="scrow"><span class="sckey">Alt+E</span><span class="scdesc">Toggle screen eye</span></div>
+        <div class="scrow"><span class="sckey">Alt+T</span><span class="scdesc">Focus input</span></div>
+        <div class="scrow"><span class="sckey">Alt+X</span><span class="scdesc">Clear chat</span></div>
       </div>
     </div>
   </div>
+  <div class="foot">
+    <button class="bbk" onclick="nav(3)">←</button>
+    <button class="bnx" onclick="nav(5)">Almost there →</button>
+  </div>
 </div>
 
+<!-- ══ S5: Ready ══════════════════════════════════ -->
+<div class="screen" id="s5">
+  <!-- CSS Signal Orb — XL with glow rings -->
+  <div class="ready-orb-wrap">
+    <div class="orb orb-xl speaking" id="ready-orb" style="position:relative;">
+      <div class="orb-xl-glow"></div>
+      <div class="orb-xl-glow-2"></div>
+      <div class="a1"></div>
+      <div class="a2"></div>
+      <div class="a3"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+  <div class="rname">Ready, <em id="ruser">there</em>.</div>
+  <div class="rsummary" id="rsummary"></div>
+  <button class="rbtn" onclick="finish()">Open SOUL</button>
+  <div class="vtag">SOUL v1.6 stable &nbsp;·&nbsp; Llama 3.3 70B &nbsp;·&nbsp; Electron + Python</div>
+</div>
+
+</div><!-- /shell -->
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-const S = {
-  step:0, name:'', user_name:'', pronouns:'she/her',
-  device_name:'', permission_tier:'standard',
+'use strict';
+
+// ── App state ──────────────────────────────────────
+const S={
+  user_name:'',name:'SOUL',pronouns:'she/her',
+  device_name:'',permission_tier:'standard',
   waiting_for:null,
 };
+const PROG={1:'16%',2:'34%',3:'52%',4:'72%',5:'100%'};
+let _cur=1;
 
-const PROG = { 1:'25%', 2:'50%', 3:'75%', 4:'100%' };
+// ── Navigation ─────────────────────────────────────
+function nav(n){
+  const prev=document.getElementById('s'+_cur);
+  const next=document.getElementById('s'+n);
+  if(!prev||!next)return;
 
-// ── Screen nav ─────────────────────────────────────────────────────────────
-function showScreen(n){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  document.getElementById('prog').style.width = PROG[n] || '25%';
+  // Exit current
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(()=>prev.classList.remove('exit'),300);
+
+  // Enter next (direction-aware initial transform)
+  next.style.transition='none';
+  next.style.transform=n>_cur?'translateX(24px)':'translateX(-24px)';
+  next.style.opacity='0';
+  next.classList.add('active');
+
+  // Force reflow then animate in
+  next.getBoundingClientRect();
+  next.style.transition='';
+  next.style.transform='translateX(0)';
+  next.style.opacity='1';
+
+  _cur=n;
+  document.getElementById('prog-fill').style.width=PROG[n]||'16%';
+  if(n===5)buildReady();
 }
-function goTo(n){ showScreen(n); }
-function goBack(n){ showScreen(n-1); }
 
-// ── Chat UI ────────────────────────────────────────────────────────────────
-function mk56(){ return `<div class="signal" style="width:28px;height:28px;flex-shrink:0">
-  <div class="s-arc s-a1" style="width:28px;height:28px"></div>
-  <div class="s-arc s-a2" style="width:19px;height:19px"></div>
-  <div class="s-arc s-a3" style="width:11px;height:11px"></div>
-  <div class="s-dot"       style="width:3px;height:3px"></div>
-</div>`; }
+// ── Orb state ──────────────────────────────────────
+const STATES=['idle','thinking','speaking','listening'];
+const STATE_LBLS={idle:'IDLE',thinking:'THINKING',speaking:'SPEAKING',listening:'LISTENING'};
 
-function soulMsg(text, delay=0){
+function setOrbState(k){
+  const orb=document.getElementById('chat-orb');
+  const lbl=document.getElementById('state-lbl');
+  if(!orb)return;
+  STATES.forEach(s=>orb.classList.remove(s));
+  orb.classList.add(k);
+  if(lbl)lbl.textContent=STATE_LBLS[k]||k.toUpperCase();
+}
+
+// ── Chat helpers ───────────────────────────────────
+function mo(){
+  return`<div class="orb orb-sm" style="flex-shrink:0">
+    <div class="a1"></div><div class="a2"></div>
+    <div class="a3"></div><div class="dot"></div>
+  </div>`;
+}
+
+function soulMsg(text,delay=0){
   return new Promise(res=>{
     setTimeout(()=>{
-      const chat = document.getElementById('chat');
-      document.getElementById('typing-ind')?.remove();
-      const el = document.createElement('div');
-      el.className = 'msg-soul';
-      el.innerHTML = `${mk56()}<div class="bub">${text}</div>`;
-      chat.appendChild(el); chat.scrollTop=chat.scrollHeight; res();
-    }, delay);
+      document.getElementById('typ-ind')?.remove();
+      const c=document.getElementById('chat');
+      const el=document.createElement('div');
+      el.className='msg-soul';
+      el.innerHTML=mo()+'<div class="bub">'+text+'</div>';
+      c.appendChild(el);c.scrollTop=c.scrollHeight;res();
+    },delay);
   });
 }
 function userMsg(t){
-  const chat = document.getElementById('chat');
-  document.getElementById('typing-ind')?.remove();
-  const el = document.createElement('div');
-  el.className = 'msg-user';
-  el.innerHTML = `<div class="bub">${t}</div>`;
-  chat.appendChild(el); chat.scrollTop=chat.scrollHeight;
+  document.getElementById('typ-ind')?.remove();
+  const c=document.getElementById('chat');
+  const el=document.createElement('div');
+  el.className='msg-user';
+  el.innerHTML='<div class="bub">'+t+'</div>';
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
 }
 function showTyping(delay=0){
   setTimeout(()=>{
-    document.getElementById('typing-ind')?.remove();
-    const chat = document.getElementById('chat');
-    const el = document.createElement('div');
-    el.className='typing'; el.id='typing-ind';
-    el.innerHTML=`${mk56()}<div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
-    chat.appendChild(el); chat.scrollTop=chat.scrollHeight;
-  }, delay);
+    document.getElementById('typ-ind')?.remove();
+    const c=document.getElementById('chat');
+    const el=document.createElement('div');
+    el.className='typ-ind';el.id='typ-ind';
+    el.innerHTML=mo()+'<div class="typ-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
+    c.appendChild(el);c.scrollTop=c.scrollHeight;
+  },delay);
 }
 function showOpts(opts){
-  const w = document.getElementById('opts-wrap');
+  const w=document.getElementById('opts-wrap');
   w.innerHTML='';
-  const div = document.createElement('div'); div.className='opts-wrap';
+  const row=document.createElement('div');
+  row.className='opts-row';
   opts.forEach(({label,val})=>{
-    const b = document.createElement('button'); b.className='opt';
-    b.textContent=label;
-    b.onclick=()=>{ w.innerHTML=''; handleOpt(val||label); };
-    div.appendChild(b);
+    const b=document.createElement('button');
+    b.className='opt';b.textContent=label;
+    b.onclick=()=>{w.innerHTML='';handleOpt(val||label);};
+    row.appendChild(b);
   });
-  w.appendChild(div);
+  w.appendChild(row);
 }
-function enableInp(ph='type here…'){
-  document.getElementById('inp').disabled=false;
-  document.getElementById('send-btn').disabled=false;
-  document.getElementById('inp').placeholder=ph;
-  document.getElementById('inp').focus();
+function enableInp(ph){
+  const i=document.getElementById('inp');
+  i.disabled=false;i.placeholder=ph||'type here…';i.focus();
+  document.getElementById('sbtn').disabled=false;
 }
 function disableInp(){
   document.getElementById('inp').disabled=true;
-  document.getElementById('send-btn').disabled=true;
   document.getElementById('inp').value='';
+  document.getElementById('sbtn').disabled=true;
 }
 
-// ── Flow ───────────────────────────────────────────────────────────────────
+// ── Chat flow ──────────────────────────────────────
 async function startFlow(){
+  // Try to grab device name from backend
   try{
-    const r = await fetch('http://127.0.0.1:8765/status');
-    const d = await r.json();
-    const cn = d.computer_name||'';
-    if(cn && !/^(desktop|laptop|computer|pc|home|user|admin)[-_]/i.test(cn) && cn.length>=2 && cn.length<=20)
-      S.device_name = cn;
-  }catch(e){}
+    const r=await fetch('http://127.0.0.1:8765/status');
+    const d=await r.json();
+    const cn=d.computer_name||'';
+    if(cn&&!/^(desktop|laptop|computer|pc|home|user|admin)[-_]/i.test(cn)&&cn.length>=2&&cn.length<=20)
+      S.device_name=cn;
+  }catch(_){}
 
+  setOrbState('idle');
   showTyping();
-  await soulMsg("Hey. I'm SOUL — I'll be living on this machine.", 1100);
+  await soulMsg("Hey. I'm SOUL.",900);
   showTyping(300);
-  await soulMsg("What should I call you?", 1500);
+  await soulMsg("I live on this machine — always on, always here.",1500);
+  showTyping(350);
+  await soulMsg("Before we start — what should I call you?",1800);
   S.waiting_for='user_name';
   enableInp('your name…');
 }
 
-async function handleOpt(val){ userMsg(val); disableInp(); await handleResp(val); }
+async function handleOpt(val){userMsg(val);disableInp();await handleResp(val);}
+
 function sendMsg(){
-  const v = document.getElementById('inp').value.trim();
+  const v=document.getElementById('inp').value.trim();
   if(!v)return;
-  document.getElementById('inp').value=''; disableInp();
-  userMsg(v); handleResp(v);
+  document.getElementById('inp').value='';
+  disableInp();userMsg(v);handleResp(v);
 }
-document.getElementById('inp').addEventListener('keydown', e=>{ if(e.key==='Enter')sendMsg(); });
+document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
 
 async function handleResp(text){
+
+  // ── Step 1: user name ────────────────────────────
   if(S.waiting_for==='user_name'){
     S.user_name=text;
+    setOrbState('thinking');
     showTyping(300);
-    await soulMsg(`${text}. Got it.`, 900);
-    showTyping(300);
-    await soulMsg(`What should I go by? Or keep "SOUL".`, 1400);
+    await soulMsg(text+'.',700);
+    showTyping(200);
+    await soulMsg("What should I go by?",1200);
+    showTyping(200);
+    await soulMsg('Default is SOUL — or just type a name below.',1000);
+    setOrbState('idle');
     S.waiting_for='name';
-    showOpts([{label:'Keep SOUL'},{label:'Something else',val:'__custom__'}]);
-    enableInp('name me…');
+    // FIX: Only "Keep SOUL" chip. User can also just type in the input.
+    // No "Rename me" that creates a redirect loop.
+    showOpts([{label:'Keep SOUL'}]);
+    enableInp('or type a name…');
 
-  } else if(S.waiting_for==='name'){
-    if(text==='Keep SOUL'||text==='__custom__') S.name = text==='Keep SOUL' ? 'SOUL' : '';
-    else S.name = text.charAt(0).toUpperCase()+text.slice(1);
-    if(!S.name) S.name='SOUL';
-    showTyping(400);
-    await soulMsg(`${S.name} it is.`, 900);
+  // ── Step 2: entity name ──────────────────────────
+  }else if(S.waiting_for==='name'){
+    if(text==='Keep SOUL'){
+      S.name='SOUL';
+    }else{
+      // Whatever the user typed becomes the name
+      const trimmed=text.trim();
+      S.name=trimmed?trimmed.charAt(0).toUpperCase()+trimmed.slice(1):'SOUL';
+    }
+    setOrbState('thinking');
     showTyping(300);
-    await soulMsg(`Pronouns?`, 1200);
+    await soulMsg(S.name+'.',700);
+    showTyping(200);
+    await soulMsg("Pronouns?",1100);
+    setOrbState('idle');
     S.waiting_for='pronouns';
     showOpts([{label:'she/her'},{label:'he/him'},{label:'they/them'}]);
+    disableInp();
 
-  } else if(S.waiting_for==='pronouns'){
+  // ── Step 3: pronouns ─────────────────────────────
+  }else if(S.waiting_for==='pronouns'){
     S.pronouns=text;
-    showTyping(400);
-    await soulMsg(`Got it. Let me show you what I can do.`, 1000);
-    setTimeout(()=>goTo(2), 1200);
+    setOrbState('speaking');
+    showTyping(300);
+    await soulMsg("Got it. Let me show you what I can do.",900);
+    setTimeout(()=>{setOrbState('idle');nav(2);},1200);
   }
 }
 
-// ── Tier picker ────────────────────────────────────────────────────────────
+// ── Tier picker ────────────────────────────────────
 function pickTier(t){
   S.permission_tier=t;
-  ['min','std','full'].forEach(k=>document.getElementById('tc-'+k).classList.remove('on'));
-  const map={minimal:'min',standard:'std',full:'full'};
-  document.getElementById('tc-'+map[t]).classList.add('on');
+  document.querySelectorAll('.tcard').forEach(c=>c.classList.remove('on'));
+  document.getElementById('tc-'+t)?.classList.add('on');
 }
 
-// ── Personality ────────────────────────────────────────────────────────────
-function pick(segId, btn){
-  document.querySelectorAll('#'+segId+' .seg-btn').forEach(b=>b.classList.remove('on'));
+// ── Personality segs ───────────────────────────────
+function pick(seg,btn){
+  document.querySelectorAll('#'+seg+' .segbtn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
 }
-function getVal(segId){ return document.querySelector('#'+segId+' .seg-btn.on')?.dataset.val||''; }
+function getVal(seg){
+  return document.querySelector('#'+seg+' .segbtn.on')?.dataset.val||'';
+}
 
-// ── Finish ─────────────────────────────────────────────────────────────────
+// ── Ready screen ───────────────────────────────────
+function buildReady(){
+  document.getElementById('ruser').textContent=S.user_name||'there';
+
+  // Settle orb to idle after a speaking burst
+  const ro=document.getElementById('ready-orb');
+  if(ro){
+    ro.classList.remove('idle','thinking','listening');
+    ro.classList.add('speaking');
+    setTimeout(()=>{ro.classList.remove('speaking');ro.classList.add('idle');},2000);
+  }
+
+  const tL={minimal:'Observer',standard:'Standard',full:'Full access'};
+  const dL={direct:'Direct',balanced:'Balanced',gentle:'Warm'};
+  const pL={speaks_up:'Proactive',balanced:'Measured',minimal:'Quiet'};
+  const fL={dev:'Dev',mixed:'General',creative:'Creative'};
+  const rows=[
+    {k:'name',      v:S.name},
+    {k:'pronouns',  v:S.pronouns},
+    {k:'tier',      v:tL[S.permission_tier]||S.permission_tier},
+    {k:'tone',      v:dL[getVal('seg-direct')]||'—'},
+    {k:'initiative',v:pL[getVal('seg-proact')]||'—'},
+    {k:'focus',     v:fL[getVal('seg-focus')]||'—'},
+  ];
+  document.getElementById('rsummary').innerHTML=rows.map(r=>
+    `<div class="rsrow"><span class="rskey">${r.k}</span><span class="rsval">${r.v}</span></div>`
+  ).join('');
+}
+
+// ── Finish ─────────────────────────────────────────
 async function finish(){
-  const cfg = {
-    name: S.name||'SOUL',
-    pronouns: S.pronouns||'she/her',
-    user_name: S.user_name,
-    device_name: S.device_name,
-    permission_tier: S.permission_tier,
-    directness: getVal('seg-direct'),
-    proactivity: getVal('seg-proact'),
-    focus: getVal('seg-focus'),
+  const cfg={
+    name:           S.name||'SOUL',
+    pronouns:       S.pronouns||'she/her',
+    user_name:      S.user_name,
+    device_name:    S.device_name,
+    permission_tier:S.permission_tier,
+    directness:     getVal('seg-direct'),
+    proactivity:    getVal('seg-proact'),
+    focus:          getVal('seg-focus'),
   };
   try{
     await fetch('http://127.0.0.1:8765/onboarding',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(cfg)
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(cfg),
     });
-  }catch(e){}
-  if(window.pacify) await window.pacify.saveConfig({entity:cfg});
+  }catch(_){}
+  if(window.pacify)await window.pacify.saveConfig({entity:cfg});
   window.location.href='index.html';
 }
 
-// ── Start ──────────────────────────────────────────────────────────────────
 startFlow();
 </script>
 </body>
