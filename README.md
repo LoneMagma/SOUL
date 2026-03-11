@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="frontend/assets/icon.png" alt="SOUL" width="80" height="80" />
-
 <br/>
 
 [![Typing SVG](https://readme-typing-svg.demolab.com?font=Syne&weight=800&size=52&duration=2000&pause=99999&color=8B7CF8&center=true&vCenter=true&width=300&height=70&lines=SOUL)](https://github.com/LoneMagma/SOUL)
